@@ -1,14 +1,17 @@
 import rclpy
 
-from . BlimpMPCTest import BlimpMPCTest
+from . MPCHelix import MPCHelix
+from . BlimpMPCNode import BlimpMPCNode
 
 def main(args=None):
-    print('Running blimp test')
+    print('Running helix MPC')
 
     try:
         rclpy.init(args=args)
 
-        node = BlimpMPCTest()
+        dT = 0.05
+        controller = MPCHelix(dT)
+        node = BlimpMPCNode(controller)
         
         rclpy.spin(node)
 

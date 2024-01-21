@@ -54,8 +54,7 @@ class BlimpMPCTest(Node):
 
         self.sim = NonlinearBlimpSim(self.dT)
         self.sim.set_var('x', 1.0)
-        self.sim.set_var('y', 2.0)
-        self.sim.set_var('z', -0.5)
+        self.sim.set_var('psi', np.pi/2)
 
     # Function: command_cb
     # Purpose: callback for the command subscriber.

@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'origin_lqr = blimp_mpc_ros.origin_lqr:main',
-            'blimp_test = blimp_mpc_ros.blimp_test:main'
+            'blimp_test = blimp_mpc_ros.blimp_test:main',
+            'mpc_helix = blimp_mpc_ros.mpc_helix:main'
         ],
     },
 )

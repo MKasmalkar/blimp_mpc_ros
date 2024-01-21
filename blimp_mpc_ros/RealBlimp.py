@@ -1,5 +1,7 @@
 
-from . BlimpSim import BlimpSim
+from . NonlinearBlimpSim import NonlinearBlimpSim
 
-class RealBlimp(BlimpSim):
-    pass
+class RealBlimp(NonlinearBlimpSim):
+    
+    def __init__(self, dT):
+        super().__init__(dT)

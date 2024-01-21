@@ -4,7 +4,7 @@ from geometry_msgs.msg import Quaternion, Vector3
 from mocap_msgs.msg import RigidBody
 import numpy as np
 
-from . RealBlimp import RealBlimp
+from . NonlinearBlimpSim import NonlinearBlimpSim
 from . operators import *
 from . utilities import *
 
@@ -60,7 +60,8 @@ class BlimpMPCNode(Node):
         # The "simulator" is just a dummy object that passes along data from
         # the actual blimp. The blimp controller classes require a "simulator"
         # to exist, from which they read the state data.
-        self.sim = RealBlimp(self.dT)
+        self.sim = NonlinearBlimpSim(self.dT)
+        self.controller.init_sim(self.sim)
 
         # Used for computing velocity
         self.prev_x = None
@@ -140,7 +141,7 @@ class BlimpMPCNode(Node):
 
         self.write_command(fx, fy, fz, tau_z)
         
-        print("Computed control in " + str(time.time() - start))
+        print("Control: " + str(fx) + ", " + str(fy) + ", " + str(fz) + ", " + str(tau_z))
 
     def write_command(self, fx, fy, fz, tau_z):
 
