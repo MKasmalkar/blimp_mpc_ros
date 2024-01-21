@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'origin_lqr = blimp_mpc_ros.origin_lqr:main'
+            'origin_lqr = blimp_mpc_ros.origin_lqr:main',
+            'blimp_test = blimp_mpc_ros.blimp_test:main'
         ],
     },
 )

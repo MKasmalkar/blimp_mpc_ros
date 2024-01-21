@@ -1,7 +1,6 @@
 import rclpy
 
-from . OriginLQRController import OriginLQRController
-from . BlimpMPCNode import BlimpMPCNode
+from . BlimpMPCTest import BlimpMPCTest
 
 def main(args=None):
     print('Running origin LQR')
@@ -9,9 +8,7 @@ def main(args=None):
     try:
         rclpy.init(args=args)
 
-        dT = 0.05
-        controller = OriginLQRController(0.05)
-        node = BlimpMPCNode(controller)
+        node = BlimpMPCTest()
         
         rclpy.spin(node)
 
