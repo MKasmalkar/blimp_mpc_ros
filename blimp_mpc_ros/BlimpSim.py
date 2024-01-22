@@ -1,6 +1,6 @@
 import numpy as np
 import scipy
-from rta.blimp import Blimp
+from . rta.blimp import Blimp
 import time
 import csv
 

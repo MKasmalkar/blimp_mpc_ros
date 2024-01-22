@@ -54,6 +54,7 @@ class MPCHelix(BlimpController):
         self.target_theta = np.zeros(self.traj_x.shape)
     
     def init_sim(self, sim):
+        
         # Get A matrix corresponding to zero state vector equilibrium position
         A_dis = sim.get_A_dis()
         

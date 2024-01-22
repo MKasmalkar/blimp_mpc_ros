@@ -22,7 +22,9 @@ setup(
         'console_scripts': [
             'origin_lqr = blimp_mpc_ros.origin_lqr:main',
             'blimp_test = blimp_mpc_ros.blimp_test:main',
-            'mpc_helix = blimp_mpc_ros.mpc_helix:main'
+            'mpc_helix = blimp_mpc_ros.mpc_helix:main',
+            'fdbk_lin_helix = blimp_mpc_ros.fdbk_lin_helix:main',
+            'blimp_sim = blimp_mpc_ros.blimp_sim:main'
         ],
     },
 )

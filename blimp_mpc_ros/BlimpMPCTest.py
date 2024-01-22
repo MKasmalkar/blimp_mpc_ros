@@ -42,6 +42,18 @@ class BlimpMPCTest(Node):
             1
         )
 
+        self.vel_publisher = self.create_publisher(
+            Vector3,
+            f'/agents/blimp{blimp_id}/velocities',
+            1
+        )
+
+        self.ang_publisher = self.create_publisher(
+            Vector3,
+            f'/agents/blimp{blimp_id}/angles',
+            1
+        )
+
         self.mocap_timer = self.create_timer(
             self.dT,
             self.mocap_publisher_cb
@@ -52,6 +64,16 @@ class BlimpMPCTest(Node):
             self.gyro_publisher_cb
         )
 
+        self.velocity_timer = self.create_timer(
+            self.dT,
+            self.velocity_publisher_cb
+        )
+
+        self.ang_timer = self.create_timer(
+            self.dT,
+            self.angle_publisher_cb
+        )
+
         self.sim = NonlinearBlimpSim(self.dT)
         self.sim.set_var('x', 1.0)
         self.sim.set_var('psi', np.pi/2)
@@ -60,15 +82,28 @@ class BlimpMPCTest(Node):
     # Purpose: callback for the command subscriber.
     # Note that inputs are in R4, hence why we (ab)use the Quaternion message type.
     def command_cb(self, quaternion_message):
-        print("State: " + str(self.sim.get_var('x')) + ", " + 
-                          str(self.sim.get_var('y')) + ", " +
-                          str(self.sim.get_var('z')))
-        
         self.sim.update_model(np.array([quaternion_message.x,
                                         quaternion_message.y,
                                         quaternion_message.z,
                                         quaternion_message.w]))
         
+        print(f"Current state: {round(self.sim.get_var('x'), 6)}, {round(self.sim.get_var('y'), 6)}, {round(self.sim.get_var('z'), 6)}, {round(self.sim.get_var('psi'), 6)}")
+
+    # TODO: delete velocity and angle publishers
+    def velocity_publisher_cb(self):
+        msg = Vector3()
+        msg.x = self.sim.get_var('vx')
+        msg.y = self.sim.get_var('vy')
+        msg.z = self.sim.get_var('vz')
+        self.vel_publisher.publish(msg)
+
+    def angle_publisher_cb(self):
+        msg = Vector3()
+        msg.x = self.sim.get_var('phi')
+        msg.y = self.sim.get_var('theta')
+        msg.z = self.sim.get_var('psi')
+        self.ang_publisher.publish(msg)
+
     # Publishes the gyro readings to the topic /agents/blimp{blimp_id}/gyros.
     # NED frame.
     def gyro_publisher_cb(self):
@@ -85,7 +120,7 @@ class BlimpMPCTest(Node):
         msg.pose.position.x = self.sim.get_var('x')
         msg.pose.position.y = self.sim.get_var('y')
         msg.pose.position.z = self.sim.get_var('z')
-        
+
         orientation = euler2quat(np.array([self.sim.get_var('phi'),
                                            self.sim.get_var('theta'),
                                            self.sim.get_var('psi')]))
@@ -93,6 +128,7 @@ class BlimpMPCTest(Node):
         msg.pose.orientation.x = orientation[0]
         msg.pose.orientation.y = orientation[1]
         msg.pose.orientation.z = orientation[2]
+        msg.pose.orientation.w = orientation[3]
 
         self.mocap_publisher.publish(msg)
 
