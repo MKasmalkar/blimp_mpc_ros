@@ -14,8 +14,10 @@ from . BlimpLogger import BlimpLogger
 from . utilities import *
 
 class BlimpMPCTest(Node):
-    def __init__(self):
+    def __init__(self, filename):
         super().__init__('blimp_test')
+
+        self.logfile = filename
 
         blimp_id = 0
         self.dT = 0.05
@@ -98,6 +100,6 @@ class BlimpMPCTest(Node):
 
     def destroy_node(self):
         print("Logging data...")
-        logger = BlimpLogger('log.csv')
+        logger = BlimpLogger(self.logfile)
         logger.log(self.sim)
         print("Logging done!")

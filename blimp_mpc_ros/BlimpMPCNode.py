@@ -8,12 +8,16 @@ from . NonlinearBlimpSim import NonlinearBlimpSim
 from . operators import *
 from . utilities import *
 
+from . BlimpLogger import BlimpLogger
+
 import time
 
 class BlimpMPCNode(Node):
 
-    def __init__(self, controller, blimp_id=0):
+    def __init__(self, controller, logfile, blimp_id=0):
         super().__init__(f'blimp_mpc_{blimp_id}')
+
+        self.logfile = logfile
 
         # Create periodic controller "interrupt"
         self.dT = controller.dT
@@ -283,3 +287,9 @@ class BlimpMPCNode(Node):
         msg.w = tau_z
         
         self.publisher_.publish(msg)
+
+    def destroy_node(self):
+        print("Logging data...")
+        logger = BlimpLogger(self.logfile)
+        logger.log(self.sim)
+        print("Logging done!")

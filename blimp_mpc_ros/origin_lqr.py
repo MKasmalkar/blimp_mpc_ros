@@ -3,19 +3,26 @@ import rclpy
 from . OriginLQRController import OriginLQRController
 from . BlimpMPCNode import BlimpMPCNode
 
-def main(args=None):
-    print('Running origin LQR')
+import sys
+
+def main(args=sys.argv):
+
+    if len(args) < 2:
+        print("Please run with log file name as argument.")
+        sys.exit(0)
+    
+    print('Running origin LQR, logging to ' + args[1])
 
     try:
         rclpy.init(args=args)
 
         dT = 0.05
-        controller = OriginLQRController(0.05)
-        node = BlimpMPCNode(controller)
+        controller = OriginLQRController(dT)
+        node = BlimpMPCNode(controller, args[1])
         
         rclpy.spin(node)
 
-    except KeyboardInterrupt:
+    finally:
         node.destroy_node()
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
 
-data = csvread('log.csv');
+arg_list = argv();
+
+data = csvread(arg_list{1});
 
 time = data(:, 1);
 
