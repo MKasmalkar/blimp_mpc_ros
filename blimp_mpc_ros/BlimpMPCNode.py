@@ -27,8 +27,6 @@ class BlimpMPCNode(Node):
         )
 
         # Create subscribers for reading state data
-        self.vel_last_message = None
-        self.angles_last_message = None
         
         self.update_mocap_subscription = self.create_subscription(
             RigidBody,
@@ -36,21 +34,7 @@ class BlimpMPCNode(Node):
             self.read_mocap,
             1
         )
-
-        self.update_velocities_subscription = self.create_subscription(
-            Vector3,
-            f"/agents/blimp{blimp_id}/velocities",
-            self.read_velocities,
-            1
-        )
-
-        self.update_angles_subscription = self.create_subscription(
-            Vector3,
-            f"/agents/blimp{blimp_id}/angles",
-            self.read_angles,
-            1
-        )
-
+        
         self.update_gyros_subscription = self.create_subscription(
             Vector3,
             f"agents/blimp{blimp_id}/gyros",
@@ -215,18 +199,6 @@ class BlimpMPCNode(Node):
         w_x = self.ang_vel_history[0][self.gyro_k]
         w_y = self.ang_vel_history[1][self.gyro_k]
         w_z = self.ang_vel_history[2][self.gyro_k]
-
-        # print(f"Mocap angles: {phi}, {theta}, {psi}")
-
-        # # # TODO: delete mocking of angles
-        # phi = self.angles_last_message.x
-        # theta = self.angles_last_message.y
-        # psi = self.angles_last_message.z
-
-        # TODO: delete mocking of velocity
-        v_x = self.vel_last_message.x
-        v_y = self.vel_last_message.y
-        v_z = self.vel_last_message.z
 
         self.sim.set_var('x', x)
         self.sim.set_var('y', y)
