@@ -114,7 +114,7 @@ class BlimpSim():
 
     def set_var_dot(self, var, val):
         self.state_dot[self.state_idx[var]] = val
-        self.state_dot_history[self.current_timestep] = self.state_dot
+        self.state_dot_history[self.current_timestep] = self.state_dot.reshape(12)
 
     def get_var(self, var):
         return self.state[self.state_idx[var]].item()

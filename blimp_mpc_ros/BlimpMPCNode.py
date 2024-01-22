@@ -58,10 +58,16 @@ class BlimpMPCNode(Node):
         self.angle_history = None       # [phi, theta, psi]
         self.ang_vel_history = None     # [wx, wy, wz]
 
+        self.pos_dot_history = None
+        self.vel_dot_history = None
+        self.ang_dot_history = None
+        self.ang_vel_dot_history = None
+
         self.full_rotations = 0
         self.prev_mocap_psi = None
 
         self.last_mocap_timestamp = None
+        self.last_gyro_timestamp = None
         self.mocap_k = -1   # index of most recent mocap msg in state history arrays
         self.gyro_k = -1    # index of most recent gyro msg in angle history array
 
@@ -74,6 +80,7 @@ class BlimpMPCNode(Node):
         self.angles_last_message = msg
 
     def read_gyros(self, msg):
+        current_time = time.time()
 
         self.gyro_k += 1
 
@@ -89,6 +96,22 @@ class BlimpMPCNode(Node):
         else:
             self.ang_vel_history = np.hstack((self.ang_vel_history,
                                               np.array([w_x, w_y, w_z]).reshape((3,1))))
+            
+        if self.last_gyro_timestamp == None:
+            self.last_gyro_timestamp = current_time
+            w_x_dot = 0
+            w_y_dot = 0
+            w_z_dot = 0
+            
+            self.ang_vel_dot_history = np.array([w_x_dot,
+                                                 w_y_dot,
+                                                 w_z_dot]).reshape((3,1))
+        else:
+            deltaT = current_time - self.last_gyro_timestamp
+            self.last_gyro_timestamp = current_time
+
+            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_vel_history[:, self.gyro_k-1]) / deltaT
+            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
 
     def read_mocap(self, msg):
         current_time = time.time()
@@ -152,13 +175,11 @@ class BlimpMPCNode(Node):
         if self.last_mocap_timestamp is None:
             self.last_mocap_timestamp = current_time
 
-            v_x_b = 0
-            v_y_b = 0
-            v_z_b = 0
+            self.velocity_history = np.array([0, 0, 0]).reshape((3,1))
 
-            current_vel = np.array([v_x_b, v_y_b, v_z_b]).reshape((3,1))
-            
-            self.velocity_history = current_vel
+            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.pos_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.ang_dot_history = np.array([0, 0, 0]).reshape((3,1))
 
         else:
             deltaT = current_time - self.last_mocap_timestamp
@@ -170,12 +191,26 @@ class BlimpMPCNode(Node):
                     - self.position_history[1][self.mocap_k-1]) / deltaT
             v_z_n = (self.position_history[2][self.mocap_k]
                     - self.position_history[2][self.mocap_k-1]) / deltaT
+            
+            self.pos_dot_history = np.hstack((self.pos_dot_history,
+                                              np.array([v_x_n, v_y_n, v_z_n]).reshape((3,1))))
+
+            phi_dot = (self.angle_history[0][self.mocap_k]
+                       - self.angle_history[0][self.mocap_k-1]) / deltaT
+            theta_dot = (self.angle_history[1][self.mocap_k]
+                       - self.angle_history[1][self.mocap_k-1]) / deltaT
+            psi_dot = (self.angle_history[2][self.mocap_k]
+                       - self.angle_history[2][self.mocap_k-1]) / deltaT
+
+            self.ang_dot_history = np.hstack((self.ang_dot_history,
+                                              np.array([phi_dot, theta_dot, psi_dot]).reshape((3,1))))
 
             vel_vect_n = np.array([v_x_n, v_y_n, v_z_n]).T
-
             vel_vect_b = R_b__n_inv(phi, theta, psi) @ vel_vect_n
-
             self.velocity_history = np.hstack((self.velocity_history, vel_vect_b.reshape((3,1))))
+
+            vel_dot = (self.velocity_history[:, self.mocap_k] - self.velocity_history[:, self.mocap_k-1]) / deltaT
+            self.vel_dot_history = np.hstack((self.vel_dot_history, vel_dot.reshape((3,1))))
 
             self.state_variables_valid = True
 
@@ -212,8 +247,22 @@ class BlimpMPCNode(Node):
         self.sim.set_var('wx', w_x)
         self.sim.set_var('wy', w_y)
         self.sim.set_var('wz', w_z)
-        self.sim.update_history()
+        
+        self.sim.set_var_dot('x', self.pos_dot_history[0][self.mocap_k])
+        self.sim.set_var_dot('y', self.pos_dot_history[1][self.mocap_k])
+        self.sim.set_var_dot('z', self.pos_dot_history[2][self.mocap_k])
+        self.sim.set_var_dot('phi', self.ang_dot_history[0][self.mocap_k])
+        self.sim.set_var_dot('theta', self.ang_dot_history[1][self.mocap_k])
+        self.sim.set_var_dot('psi', self.ang_dot_history[2][self.mocap_k])
+        self.sim.set_var_dot('vx', self.vel_dot_history[0][self.mocap_k])
+        self.sim.set_var_dot('vy', self.vel_dot_history[1][self.mocap_k])
+        self.sim.set_var_dot('vz', self.vel_dot_history[2][self.mocap_k])
+        self.sim.set_var_dot('wx', self.ang_vel_history[0][self.gyro_k])
+        self.sim.set_var_dot('wy', self.ang_vel_history[1][self.gyro_k])
+        self.sim.set_var_dot('wz', self.ang_vel_history[2][self.gyro_k])
 
+        self.sim.update_history()
+        
         ctrl = self.controller.get_ctrl_action(self.sim)
         fx = ctrl[0].item()
         fy = ctrl[1].item()
