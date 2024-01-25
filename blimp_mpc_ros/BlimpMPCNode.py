@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Quaternion, Vector3
-from mocap_msgs.msg import RigidBody
+from mocap_msgs.msg import RigidBodies
 import numpy as np
 
 from . NonlinearBlimpSim import NonlinearBlimpSim
@@ -33,7 +33,7 @@ class BlimpMPCNode(Node):
         # Create subscribers for reading state data
         
         self.update_mocap_subscription = self.create_subscription(
-            RigidBody,
+            RigidBodies,
             f"/rigid_bodies",
             self.read_mocap,
             1
@@ -118,6 +118,8 @@ class BlimpMPCNode(Node):
             self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
 
     def read_mocap(self, msg):
+        blimp = msg.rigidbodies[0]
+
         current_time = time.time()
 
         self.mocap_k += 1
@@ -125,14 +127,14 @@ class BlimpMPCNode(Node):
         # Mocap gives you x, y, z, phi, theta, psi
         # Can compute vx, vy, vz
 
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        z = msg.pose.position.z
+        x = blimp.pose.position.x
+        y = blimp.pose.position.y
+        z = blimp.pose.position.z
 
-        angles = quat2euler(np.array([msg.pose.orientation.x,
-                                      msg.pose.orientation.y,
-                                      msg.pose.orientation.z,
-                                      msg.pose.orientation.w]))
+        angles = quat2euler(np.array([blimp.pose.orientation.x,
+                                      blimp.pose.orientation.y,
+                                      blimp.pose.orientation.z,
+                                      blimp.pose.orientation.w]))
         
         phi = angles[0]
         theta = angles[1]
@@ -216,11 +218,16 @@ class BlimpMPCNode(Node):
             vel_dot = (self.velocity_history[:, self.mocap_k] - self.velocity_history[:, self.mocap_k-1]) / deltaT
             self.vel_dot_history = np.hstack((self.vel_dot_history, vel_dot.reshape((3,1))))
 
-            self.state_variables_valid = True
-
     def compute_control(self):
         
-        if not self.state_variables_valid:
+        if self.position_history is None \
+            or self.velocity_history is None \
+            or self.angle_history is None \
+            or self.ang_vel_history is None \
+            or self.pos_dot_history is None \
+            or self.vel_dot_history is None \
+            or self.ang_dot_history is None \
+            or self.ang_vel_dot_history is None:
             return
 
         x = self.position_history[0][self.mocap_k]
@@ -267,17 +274,18 @@ class BlimpMPCNode(Node):
 
         self.sim.update_history()
         
-        ctrl = self.controller.get_ctrl_action(self.sim)
+        ctrl = self.controller.get_ctrl_action(self.sim, )
         fx = ctrl[0].item()
         fy = ctrl[1].item()
         fz = ctrl[2].item()
         tau_z = ctrl[3].item()
 
+        print()
+        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
+
         self.write_command(fx, fy, fz, tau_z)
 
     def write_command(self, fx, fy, fz, tau_z):
-
-        print(f"Control: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
 
         msg = Quaternion()
 

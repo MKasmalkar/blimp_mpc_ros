@@ -2,7 +2,7 @@ import rclpy
 import numpy as np
 import signal # for interrupts
 import time # for measuring execution time
-from mocap_msgs.msg import RigidBody
+from mocap_msgs.msg import RigidBody, RigidBodies
 
 from rclpy.node import Node
 
@@ -33,7 +33,7 @@ class BlimpMPCTest(Node):
         self.command = np.zeros(4, dtype=np.double)
 
         self.mocap_publisher = self.create_publisher(
-            RigidBody,
+            RigidBodies,
             f'/rigid_bodies',
             1
         )
@@ -56,8 +56,12 @@ class BlimpMPCTest(Node):
 
         self.sim = NonlinearBlimpSim(self.dT)
         self.sim.set_var('x', 1.0)
+        self.sim.set_var('y', 2.0)
+        self.sim.set_var('z', -3.0)
+        self.sim.set_var('phi', np.pi/10)
+        self.sim.set_var('theta', np.pi/4)
         self.sim.set_var('psi', np.pi/2)
-
+        
     # Function: command_cb
     # Purpose: callback for the command subscriber.
     # Note that inputs are in R4, hence why we (ab)use the Quaternion message type.
@@ -79,21 +83,25 @@ class BlimpMPCTest(Node):
         self.gyro_publisher.publish(msg)
 
     def mocap_publisher_cb(self):
-        msg = RigidBody()
-        msg.rigid_body_name = "blimp0"
+        msg = RigidBodies()
 
-        msg.pose.position.x = self.sim.get_var('x')
-        msg.pose.position.y = self.sim.get_var('y')
-        msg.pose.position.z = self.sim.get_var('z')
+        blimp = RigidBody()
+        blimp.rigid_body_name = "blimp0"
+
+        blimp.pose.position.x = self.sim.get_var('x')
+        blimp.pose.position.y = self.sim.get_var('y')
+        blimp.pose.position.z = self.sim.get_var('z')
 
         orientation = euler2quat(np.array([self.sim.get_var('phi'),
                                            self.sim.get_var('theta'),
                                            self.sim.get_var('psi')]))
         
-        msg.pose.orientation.x = orientation[0]
-        msg.pose.orientation.y = orientation[1]
-        msg.pose.orientation.z = orientation[2]
-        msg.pose.orientation.w = orientation[3]
+        blimp.pose.orientation.x = orientation[0]
+        blimp.pose.orientation.y = orientation[1]
+        blimp.pose.orientation.z = orientation[2]
+        blimp.pose.orientation.w = orientation[3]
+
+        msg.rigidbodies = [blimp]
 
         self.mocap_publisher.publish(msg)
 
