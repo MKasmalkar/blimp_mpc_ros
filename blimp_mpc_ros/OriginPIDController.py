@@ -25,9 +25,9 @@ class OriginPIDController(BlimpController):
         self.Ki_z = 0.005
         self.Kd_z = 0.2
 
-        self.Kp_psi = 0.005
-        self.Ki_psi = 0.0
-        self.Kd_psi = 0.1
+        self.Kp_psi = 0.0625
+        self.Ki_psi = 0.005
+        self.Kd_psi = 0.2
 
         self.x_error_prev = None
         self.y_error_prev = None
