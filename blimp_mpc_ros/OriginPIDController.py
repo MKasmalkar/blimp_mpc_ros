@@ -9,9 +9,9 @@ class OriginPIDController(BlimpController):
     def __init__(self, dT):
         super().__init__(dT)
 
-        self.Kp_pos = 0.0625
-        self.Ki_pos = 0.005
-        self.Kd_pos = 0.2
+        self.Kp_pos = 0.0125
+        self.Ki_pos = 0.0
+        self.Kd_pos = 0.0
 
         self.Kp_x = self.Kp_pos
         self.Ki_x = self.Ki_pos
@@ -25,9 +25,9 @@ class OriginPIDController(BlimpController):
         self.Ki_z = 0.005
         self.Kd_z = 0.2
 
-        self.Kp_psi = 0.0625
-        self.Ki_psi = 0.005
-        self.Kd_psi = 0.2
+        self.Kp_psi = 0.0001
+        self.Ki_psi = 0.0
+        self.Kd_psi = 0.0
 
         self.x_error_prev = None
         self.y_error_prev = None
@@ -74,7 +74,7 @@ class OriginPIDController(BlimpController):
         y_error = self.y_ref - y
         z_error = self.z_ref - z
         psi_error = self.psi_ref - psi
-    
+
         self.x_error_int   += x_error   * deltaT
         self.y_error_int   += y_error   * deltaT
         self.z_error_int   += z_error   * deltaT
@@ -97,9 +97,10 @@ class OriginPIDController(BlimpController):
 
         f_world = np.array([fx_world, fy_world, fz_world])
         f_body = R_b__n_inv(phi, theta, psi) @ f_world.reshape((3,1))
-        
-        #return np.array([f_body[0].item(), f_body[1].item(), f_body[2].item(), tauz_world])
-        return np.array([f_body[0].item(), f_body[1].item(), f_body[2].item(), 0.0])
+
+        return np.array([f_body[0].item(), f_body[1].item(), f_body[2].item(), tauz_world])
+        # return np.array([f_body[0].item(), f_body[1].item(), f_body[2].item(), 0.0])
+        # return np.array([0.0, 0.0, 0.0, tauz_world])
 
     def get_error(self, sim):
         return np.array([
