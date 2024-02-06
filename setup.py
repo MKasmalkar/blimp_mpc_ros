@@ -25,7 +25,10 @@ setup(
             'mpc_helix = blimp_mpc_ros.mpc_helix:main',
             'fdbk_lin_helix = blimp_mpc_ros.fdbk_lin_helix:main',
             'blimp_sim = blimp_mpc_ros.blimp_sim:main',
-            'origin_pid = blimp_mpc_ros.origin_pid:main'
+            'origin_pid = blimp_mpc_ros.origin_pid:main',
+            'motion_test = blimp_mpc_ros.motion_test:main',
+            'cs_nlp_origin = blimp_mpc_ros.cs_nlp_origin:main',
+            'mpc_origin = blimp_mpc_ros.mpc_origin:main'
         ],
     },
 )

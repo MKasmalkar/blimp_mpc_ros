@@ -5,14 +5,14 @@ import time
 from . BlimpController import BlimpController
 from . parameters import *
 
-class MPCHelix(BlimpController):
+class MPCOrigin(BlimpController):
 
     def __init__(self, dT):
         super().__init__(dT)
 
         self.order = 12
         self.num_inputs = 4
-        self.num_outputs = 6
+        self.num_outputs = 3
         
         # Time
         TRACKING_TIME = 100
@@ -57,23 +57,33 @@ class MPCHelix(BlimpController):
         
         # Get A matrix corresponding to zero state vector equilibrium position
         A_dis = sim.get_A_dis()
-        
-        sim.set_var('x', self.x0)
-        sim.set_var('psi', self.psi0)
 
         self.B = sim.get_B_dis()
 
         self.C = np.matrix([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+                            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
         self.D = np.zeros((self.num_outputs, self.num_inputs))
 
-        self.P = np.identity(self.num_outputs)
-        self.Q = np.identity(self.num_outputs)
-        self.R = np.identity(self.num_inputs)
+        self.P = np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1000]
+        ]
+        )
+
+        self.Q = np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1000]
+        ])
+
+        self.R = np.array([
+            [1000, 0, 0, 0],
+            [0, 1000, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1000]
+        ])
 
         xmin = np.matrix([[-np.inf],
                         [-np.inf],
@@ -160,42 +170,6 @@ class MPCHelix(BlimpController):
 
         self.m.update()
 
-        # Add attitude oscillation damping costs
-        max_allowable_phi = 0.05
-        max_allowable_theta = 0.05
-        max_allowable_psi_deviation = 0.05
-
-        max_allowable_x_deviation = 0.4
-        max_allowable_y_deviation = 0.4
-        max_allowable_z_deviation = 0.4
-
-        self.Q[0, 0] = 1/max_allowable_x_deviation**2
-        self.Q[1, 1] = 1/max_allowable_y_deviation**2
-        self.Q[2, 2] = 1/max_allowable_z_deviation**2
-
-        self.P[0, 0] = 1/max_allowable_x_deviation**2
-        self.P[1, 1] = 1/max_allowable_y_deviation**2
-        self.P[2, 2] = 1/max_allowable_z_deviation**2
-
-        self.Q[3, 3] = 1/max_allowable_phi**2
-        self.Q[4, 4] = 1/max_allowable_theta**2
-        self.Q[5, 5] = 1/max_allowable_psi_deviation**2
-
-        self.P[3, 3] = 1/max_allowable_phi**2
-        self.P[4, 4] = 1/max_allowable_theta**2
-        self.P[5, 5] = 1/max_allowable_psi_deviation**2
-
-        # terminal cost
-        obj1 = self.z[self.N, :] @ self.P @ self.z[self.N, :]
-        
-        # running state/error cost
-        obj2 = sum(self.z[k, :] @ self.Q @ self.z[k, :] for k in range(self.N))
-        
-        # running input cost
-        obj3 = sum(self.u[k, :] @ self.R @ self.u[k, :] for k in range(self.N))
-
-        self.att_damp_obj = obj1 + obj2 + obj3
-
     def get_ctrl_action(self, sim):
 
         sim.start_timer()
@@ -206,12 +180,9 @@ class MPCHelix(BlimpController):
         #     self.m.setObjective(self.att_damp_obj)
 
         reference = np.array([
-            self.traj_x[n:min(n+self.N, len(self.traj_x))],
-            self.traj_y[n:min(n+self.N, len(self.traj_y))],
-            self.traj_z[n:min(n+self.N, len(self.traj_z))],
-            np.zeros(min(self.N, len(self.traj_x) - n)),
-            np.zeros(min(self.N, len(self.traj_x) - n)),
-            self.traj_psi[n:min(n+self.N, len(self.traj_psi))]
+            np.zeros(self.N),
+            np.zeros(self.N),
+            -1.5 * np.ones(self.N)
         ])
 
         sim_state = sim.get_state()
