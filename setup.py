@@ -28,7 +28,9 @@ setup(
             'origin_pid = blimp_mpc_ros.origin_pid:main',
             'motion_test = blimp_mpc_ros.motion_test:main',
             'cs_nlp_origin = blimp_mpc_ros.cs_nlp_origin:main',
-            'mpc_origin = blimp_mpc_ros.mpc_origin:main'
+            'mpc_origin = blimp_mpc_ros.mpc_origin:main',
+            'swing_red_ctrl = blimp_mpc_ros.swing_red_ctrl:main',
+            'single_action_drive = blimp_mpc_ros.single_action:main'
         ],
     },
 )

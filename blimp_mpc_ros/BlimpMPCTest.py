@@ -55,13 +55,6 @@ class BlimpMPCTest(Node):
         )
 
         self.sim = NonlinearBlimpSim(self.dT)
-        self.sim.set_var('x', 1.0)
-        self.sim.set_var('y', 2.0)
-        self.sim.set_var('z', -3.0)
-        # self.sim.set_var('phi', np.pi/10)
-        # self.sim.set_var('theta', np.pi/4)
-        self.sim.set_var('psi', np.pi/2)
-
         self.k = 0
         
     # Function: command_cb
