@@ -1,8 +1,13 @@
 import rclpy
+import signal
+import time
+from blimp_joystick.js_utils import JoyStick_helper
+from blimp_interfaces.msg import Motors, AnglesAndZ, HorizontalVertical
 from rclpy.node import Node
 from geometry_msgs.msg import Quaternion, Vector3
 from mocap_msgs.msg import RigidBodies
 import numpy as np
+import sys
 
 from . NonlinearBlimpSim import NonlinearBlimpSim
 from . operators import *
@@ -12,22 +17,22 @@ from . BlimpLogger import BlimpLogger
 
 import time
 
-class BlimpMPCNode(Node):
+class BlimpMPCNode2(Node):
 
     def __init__(self, controller, logfile, blimp_id=0):
         super().__init__(f'blimp_mpc_{blimp_id}')
 
         self.logfile = logfile
-
+        
         # Create periodic controller "interrupt"
         self.dT = controller.dT
         self.timer = self.create_timer(self.dT, self.compute_control)
 
         # Create publisher for sending commands to blimp    
         self.publisher_ = self.create_publisher(
-            Quaternion,
-            f"/agents/blimp{blimp_id}/motion_command",
-            10
+            Motors,
+            f'/blimp{blimp_id}/motors',
+            10 # Queue size.
         )
 
         # Create subscribers for reading state data
@@ -39,12 +44,12 @@ class BlimpMPCNode(Node):
             1
         )
         
-        self.update_gyros_subscription = self.create_subscription(
-            Vector3,
-            f"agents/blimp{blimp_id}/gyros",
-            self.read_gyros,
-            1
-        )
+        # self.update_gyros_subscription = self.create_subscription(
+        #     Vector3,
+        #     f"agents/blimp{blimp_id}/gyros",
+        #     self.read_gyros,
+        #     1
+        # )
 
         # Create controller and "simulator" variables
 
@@ -73,52 +78,52 @@ class BlimpMPCNode(Node):
         self.last_mocap_timestamp = None
         self.last_gyro_timestamp = None
         self.mocap_k = -1   # index of most recent mocap msg in state history arrays
-        self.gyro_k = -1    # index of most recent gyro msg in angle history array
 
-        self.state_variables_valid = False
+        self.moving_average_history = 100
 
-    def read_velocities(self, msg):
-        self.vel_last_message = msg
+    # def read_gyros(self, msg):
+    #     current_time = time.time()
 
-    def read_angles(self, msg):
-        self.angles_last_message = msg
+    #     self.gyro_k += 1
 
-    def read_gyros(self, msg):
-        current_time = time.time()
+    #     # Gyros give you wx, wy, wz
+    #     w_x = msg.x
+    #     w_y = msg.y
+    #     w_z = msg.z
 
-        self.gyro_k += 1
+    #     # TODO: figure out if w_x, etc. are world or body frame
 
-        # Gyros give you wx, wy, wz
-        w_x = msg.x
-        w_y = msg.y
-        w_z = msg.z
-
-        # TODO: figure out if w_x, etc. are world or body frame
-
-        if self.ang_vel_history is None:
-            self.ang_vel_history = np.array([w_x, w_y, w_z]).reshape((3,1))
-        else:
-            self.ang_vel_history = np.hstack((self.ang_vel_history,
-                                              np.array([w_x, w_y, w_z]).reshape((3,1))))
+    #     if self.ang_vel_history is None:
+    #         self.ang_vel_history = np.array([w_x, w_y, w_z]).reshape((3,1))
+    #     else:
+    #         self.ang_vel_history = np.hstack((self.ang_vel_history,
+    #                                           np.array([w_x, w_y, w_z]).reshape((3,1))))
             
-        if self.last_gyro_timestamp == None:
-            self.last_gyro_timestamp = current_time
-            w_x_dot = 0
-            w_y_dot = 0
-            w_z_dot = 0
+    #     if self.last_gyro_timestamp == None:
+    #         self.last_gyro_timestamp = current_time
+    #         w_x_dot = 0
+    #         w_y_dot = 0
+    #         w_z_dot = 0
             
-            self.ang_vel_dot_history = np.array([w_x_dot,
-                                                 w_y_dot,
-                                                 w_z_dot]).reshape((3,1))
-        else:
-            deltaT = current_time - self.last_gyro_timestamp
-            self.last_gyro_timestamp = current_time
+    #         self.ang_vel_dot_history = np.array([w_x_dot,
+    #                                              w_y_dot,
+    #                                              w_z_dot]).reshape((3,1))
+    #     else:
+    #         deltaT = current_time - self.last_gyro_timestamp
+    #         self.last_gyro_timestamp = current_time
 
-            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_vel_history[:, self.gyro_k-1]) / deltaT
-            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
+    #         ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_vel_history[:, self.gyro_k-1]) / deltaT
+    #         self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
 
     def read_mocap(self, msg):
-        blimp = msg.rigidbodies[0]
+        blimp = None
+        for body in msg.rigidbodies:
+            if body.rigid_body_name == '0':
+                blimp = body
+                break
+        if blimp == None:
+            print("Did not receive streaming data for blimp from mocap")
+            sys.exit(1)
 
         current_time = time.time()
 
@@ -138,7 +143,7 @@ class BlimpMPCNode(Node):
         
         phi = angles[0]
         theta = angles[1]
-        mocap_psi = angles[2]
+        mocap_psi = -angles[2]
 
         psi = None
         
@@ -182,31 +187,41 @@ class BlimpMPCNode(Node):
             self.last_mocap_timestamp = current_time
 
             self.velocity_history = np.array([0, 0, 0]).reshape((3,1))
+            self.ang_vel_history = np.array([0, 0, 0]).reshape((3,1))
 
-            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
             self.pos_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
             self.ang_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.ang_vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
 
         else:
             deltaT = current_time - self.last_mocap_timestamp
             self.last_mocap_timestamp = current_time
 
-            v_x_n = (self.position_history[0][self.mocap_k]
+            v_x_n_raw = (self.position_history[0][self.mocap_k]
                     - self.position_history[0][self.mocap_k-1]) / deltaT
-            v_y_n = (self.position_history[1][self.mocap_k]
+            v_y_n_raw = (self.position_history[1][self.mocap_k]
                     - self.position_history[1][self.mocap_k-1]) / deltaT
-            v_z_n = (self.position_history[2][self.mocap_k]
+            v_z_n_raw = (self.position_history[2][self.mocap_k]
                     - self.position_history[2][self.mocap_k-1]) / deltaT
             
+            v_x_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_x_n_raw) / self.moving_average_history
+            v_y_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_y_n_raw) / self.moving_average_history
+            v_z_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_z_n_raw) / self.moving_average_history
+
             self.pos_dot_history = np.hstack((self.pos_dot_history,
                                               np.array([v_x_n, v_y_n, v_z_n]).reshape((3,1))))
 
-            phi_dot = (self.angle_history[0][self.mocap_k]
+            phi_dot_raw = (self.angle_history[0][self.mocap_k]
                        - self.angle_history[0][self.mocap_k-1]) / deltaT
-            theta_dot = (self.angle_history[1][self.mocap_k]
+            theta_dot_raw = (self.angle_history[1][self.mocap_k]
                        - self.angle_history[1][self.mocap_k-1]) / deltaT
-            psi_dot = (self.angle_history[2][self.mocap_k]
+            psi_dot_raw = (self.angle_history[2][self.mocap_k]
                        - self.angle_history[2][self.mocap_k-1]) / deltaT
+            
+            phi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + phi_dot_raw) / self.moving_average_history
+            theta_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + theta_dot_raw) / self.moving_average_history
+            psi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + psi_dot_raw) / self.moving_average_history
 
             self.ang_dot_history = np.hstack((self.ang_dot_history,
                                               np.array([phi_dot, theta_dot, psi_dot]).reshape((3,1))))
@@ -218,8 +233,15 @@ class BlimpMPCNode(Node):
             vel_dot = (self.velocity_history[:, self.mocap_k] - self.velocity_history[:, self.mocap_k-1]) / deltaT
             self.vel_dot_history = np.hstack((self.vel_dot_history, vel_dot.reshape((3,1))))
 
+            ang_vel_vect_n = np.array([phi_dot, theta_dot, psi_dot]).T
+            ang_vel_vect_b = np.linalg.inv(T(phi, theta)) @ ang_vel_vect_n
+            self.ang_vel_history = np.hstack((self.ang_vel_history, ang_vel_vect_b.reshape((3,1))))
+
+            ang_vel_dot = (self.ang_vel_history[:, self.mocap_k] - self.ang_vel_history[:, self.mocap_k-1]) / deltaT
+            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
+
     def compute_control(self):
-        
+
         if self.position_history is None \
             or self.velocity_history is None \
             or self.angle_history is None \
@@ -242,9 +264,9 @@ class BlimpMPCNode(Node):
         theta = self.angle_history[1][self.mocap_k]
         psi = self.angle_history[2][self.mocap_k]
 
-        w_x = self.ang_vel_history[0][self.gyro_k]
-        w_y = self.ang_vel_history[1][self.gyro_k]
-        w_z = self.ang_vel_history[2][self.gyro_k]
+        w_x = self.ang_vel_history[0][self.mocap_k]
+        w_y = self.ang_vel_history[1][self.mocap_k]
+        w_z = self.ang_vel_history[2][self.mocap_k]
 
         self.sim.set_var('x', x)
         self.sim.set_var('y', y)
@@ -268,36 +290,90 @@ class BlimpMPCNode(Node):
         self.sim.set_var_dot('vx', self.vel_dot_history[0][self.mocap_k])
         self.sim.set_var_dot('vy', self.vel_dot_history[1][self.mocap_k])
         self.sim.set_var_dot('vz', self.vel_dot_history[2][self.mocap_k])
-        self.sim.set_var_dot('wx', self.ang_vel_history[0][self.gyro_k])
-        self.sim.set_var_dot('wy', self.ang_vel_history[1][self.gyro_k])
-        self.sim.set_var_dot('wz', self.ang_vel_history[2][self.gyro_k])
+        self.sim.set_var_dot('wx', self.ang_vel_history[0][self.mocap_k])
+        self.sim.set_var_dot('wy', self.ang_vel_history[1][self.mocap_k])
+        self.sim.set_var_dot('wz', self.ang_vel_history[2][self.mocap_k])
 
-        self.sim.update_history()
-        
-        ctrl = self.controller.get_ctrl_action(self.sim, )
+        ctrl = self.controller.get_ctrl_action(self.sim)
         fx = ctrl[0].item()
         fy = ctrl[1].item()
         fz = ctrl[2].item()
         tau_z = ctrl[3].item()
-
-        # print()
-        # print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
+        
+        self.sim.u = ctrl
+        self.sim.update_history()
+        
+        print()
+        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 10)}, {round(fy, 10)}, {round(fz, 10)}, {round(tau_z, 10)}")
 
         self.write_command(fx, fy, fz, tau_z)
 
+    # This function mixes the forces in (N) applied to each of the motors, in a closed connected subset of R6.
+    def mixer_positive(self, fx, fy, fz, tz):
+        # dc = 0.053 # I do not understand this constant.
+        dc = 1
+
+        #mixer matrix multiplication
+        front_right = -np.sqrt(2)*fx*np.heaviside(-fx, 0.5)/2 + np.sqrt(2)*fy*np.heaviside(fy, 0.5)/2 + 2*tz*np.heaviside(tz, 0.5)/dc
+        back_right = np.sqrt(2)*fx*np.heaviside(fx, 0.5)/2 + np.sqrt(2)*fy*np.heaviside(fy, 0.5)/2 - 2*tz*np.heaviside(-tz, 0.5)/dc
+        back_left = np.sqrt(2)*fx*np.heaviside(fx, 0.5)/2 - np.sqrt(2)*fy*np.heaviside(-fy, 0.5)/2 + 2*tz*np.heaviside(tz, 0.5)/dc
+        front_left = -np.sqrt(2)*fx*np.heaviside(-fx, 0.5)/2 - np.sqrt(2)*fy*np.heaviside(-fy, 0.5)/2 - 2*tz*np.heaviside(-tz, 0.5)/dc
+        z_right = fz/2
+        z_left = fz/2
+        f = np.array([front_right, back_right, back_left, front_left, z_right, z_left])
+
+        return f
+
     def write_command(self, fx, fy, fz, tau_z):
 
-        msg = Quaternion()
+        # f = self.mixer_positive(fx, fy, fz, tau_z)
+        # max_thrust = 0.06
+        # cmds = self.float_command_to_uint16(f / max_thrust)
 
-        msg.x = fx
-        msg.y = fy
-        msg.z = fz
-        msg.w = tau_z
+        f = self.mixer_positive(fx, fy, fz, tau_z)
+        max_thrust = 1
+        cmds = np.clip(f, -max_thrust, max_thrust) / max_thrust
+
+        msg = Motors()
+
+        msg.front_right = -float(cmds[0])
+        msg.back_right = -float(cmds[1])
+        msg.back_left = float(cmds[2])
+        msg.front_left = float(cmds[3])
+        msg.z_right = float(cmds[4])
+        msg.z_left = -float(cmds[5])
         
+        # msg.front_right = float(0) # thrust vector points opposite to propeller
+        # msg.back_right = float(0) # thrust vector points opposite to propeller
+        # msg.back_left = float(0) #thrust vector points in direction of propeller
+        # msg.front_left = float(0) # thrust vector points in direction of propeller
+        # msg.z_right = float(0) # thrust vector points in direction of propeller
+        # msg.z_left = float(0) # thrust vector points opposite to propeller
+
         self.publisher_.publish(msg)
+    
+    def float_command_to_uint16(self, cmd):
+        # This function takes a float command and converts it to a uint16,
+        # where the first bit of the uint16 is a sign bit.
+        # The float command is between -1 and 1.
+        
+        # First, compute the proper magnitude
+        cmd_mag = np.abs(cmd) * 32767
+        cmd_mag = cmd_mag.astype(np.uint16)
+        # Then, compute the sign bit
+
+        # cmd_sign should be 0 when positive, and 1 when negative.
+        cmd_sign = np.zeros(cmd.shape, dtype=np.uint16)
+        cmd_sign = cmd_sign + (cmd < 0)
+
+        # cmd_sign = np.sign(cmd).astype(np.uint16)
+
+        # Return the uint16
+        # self.get_logger().info(f'cmd_mag: {cmd_mag}, cmd_sign: {cmd_sign}')
+        return cmd_mag + 0x8000 * cmd_sign
 
     def destroy_node(self):
         print("Logging data...")
         logger = BlimpLogger(self.logfile)
-        logger.log(self.sim)
+        logger.log(self.sim, self.controller)
         print("Logging done!")

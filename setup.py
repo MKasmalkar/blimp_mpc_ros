@@ -30,7 +30,12 @@ setup(
             'cs_nlp_origin = blimp_mpc_ros.cs_nlp_origin:main',
             'mpc_origin = blimp_mpc_ros.mpc_origin:main',
             'swing_red_ctrl = blimp_mpc_ros.swing_red_ctrl:main',
-            'single_action_drive = blimp_mpc_ros.single_action:main'
+            'single_action_drive = blimp_mpc_ros.single_action:main',
+            'blimp2_test = blimp_mpc_ros.blimp2_test:main',
+            'stop_blimp = blimp_mpc_ros.stop_blimp:main',
+            'b2_olqr = blimp_mpc_ros.blimp2_olqr:main',
+            'b2_opid = blimp_mpc_ros.b2_opid:main',
+            'fdbk_lin_line = blimp_mpc_ros.fdbk_lin_line:main'
         ],
     },
 )

@@ -11,6 +11,8 @@ class PID:
         self.error_integral = 0
 
     def get_ctrl(self, error):
+        # error = reference - actual
+        
         self.error_integral += error*self.dT
 
         self.derivative = (error - self.prev_error)/self.dT
