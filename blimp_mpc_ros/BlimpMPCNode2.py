@@ -5,7 +5,7 @@ from blimp_joystick.js_utils import JoyStick_helper
 from blimp_interfaces.msg import Motors, AnglesAndZ, HorizontalVertical
 from rclpy.node import Node
 from geometry_msgs.msg import Quaternion, Vector3
-from mocap_msgs.msg import RigidBodies
+from mocap4r2_msgs.msg import RigidBodies
 import numpy as np
 import sys
 
