@@ -52,18 +52,18 @@ class BlimpSim():
         self.update_A_dis()
 
         self.B_lin = np.array([
-            [1/(m_Axy + m_RB), 0, 0, 0]
-            [0, 1/(m_Axy + m_RB), 0, 0]
-            [0, 0, 1/(m_Az + m_RB), 0]
-            [0, -r_t_zb__b/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0, 0]
-            [r_t_zb__b/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0, 0, 0]
-            [0, 0, 0, 1/(I_Az + I_RBz)]
-            [0, 0, 0, 0]
-            [0, 0, 0, 0]
-            [0, 0, 0, 0]
-            [0, 0, 0, 0]
-            [0, 0, 0, 0]
-            [0, 0, 0, 0]
+            [1/(m_Axy + m_RB), 0, 0, 0],
+            [0, 1/(m_Axy + m_RB), 0, 0],
+            [0, 0, 1/(m_Az + m_RB), 0],
+            [0, -r_z_tg__b/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0, 0],
+            [r_z_tg__b/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0, 0, 0],
+            [0, 0, 0, 1/(I_Az + I_RBz)],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
         ])
         
         B_int = np.zeros((12,12))
@@ -95,18 +95,18 @@ class BlimpSim():
         # ])
 
         self.A_lin = np.array([
-            [-D_vxy__CB/(m_Axy + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, -D_vxy__CB/(m_Axy + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, -D_vz__CB/(m_Az + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, 0, -D_omega_xy__CB/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0, 0, 0, 0, 0, -(f_g*r_z_gb__b)/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0, 0]
-            [0, 0, 0, 0, -D_omega_xy__CB/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0, 0, 0, 0, 0, -(f_g*r_z_gb__b)/(I_Axy + I_RBxy + m_RB*r_z_gb__b^2), 0]
-            [0, 0, 0, 0, 0, -D_omega_z__CB/(I_Az + I_RBz), 0, 0, 0, 0, 0, 0]
-            [np.cos(psi), -np.sin(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [np.sin(psi), np.cos(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
-            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+            [-D_vxy__CB/(m_Axy + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, -D_vxy__CB/(m_Axy + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, -D_vz__CB/(m_Az + m_RB), 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, -D_omega_xy__CB/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0, 0, 0, 0, 0, -(f_g*r_z_gb__b)/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0, 0],
+            [0, 0, 0, 0, -D_omega_xy__CB/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0, 0, 0, 0, 0, -(f_g*r_z_gb__b)/(I_Axy + I_RBxy + m_RB*r_z_gb__b**2), 0],
+            [0, 0, 0, 0, 0, -D_omega_z__CB/(I_Az + I_RBz), 0, 0, 0, 0, 0, 0],
+            [np.cos(psi), -np.sin(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [np.sin(psi), np.cos(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
         ])
 
     def update_A_dis(self):
