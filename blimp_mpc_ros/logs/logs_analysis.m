@@ -1,7 +1,7 @@
 
-arg_list = argv();
+% arg_list = argv();
 
-data = csvread(arg_list{1});
+data = xlsread(".csv");
 
 time = data(:, 1);
 
@@ -13,4 +13,4 @@ h = scatter3(x, y, z);
 xlabel('x')
 ylabel('y')
 zlabel('z')
-waitfor(h)
+title("Blimp PID Controller")
