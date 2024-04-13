@@ -21,9 +21,9 @@ class FeedbackLinLineFollower(BlimpController):
         m = 0.2
 
         x0 = -3.5
-        y0 = 0.8
-        z0 = -0.7
-        psi0 = 0.2
+        y0 = 0.0
+        z0 = 0.5
+        psi0 = 0.0
 
         self.traj_x = np.concatenate((x0 + m*tracking_time, (x0 + m*TRACKING_TIME) * np.ones(len(settle_time))))
         self.traj_y = np.concatenate((y0 * np.ones(len(tracking_time)), y0 * np.ones(len(settle_time))))
@@ -111,10 +111,10 @@ class FeedbackLinLineFollower(BlimpController):
         e1 = zeta1 - yd
         e2 = zeta2 - yd_dot
         
-        k1 = 1
-        k2 = 1
+        k1 = np.array([1.0, 1.0, 10.0, 0.1])
+        k2 = np.array([1.0, 1.0, 10.0, 0.01])
 
-        q = -k1 * e1 - k2 * e2 + yd_ddot
+        q = -k1.reshape((1,4)) @ e1.reshape((4,1)) - k2.reshape((1,4)) @ e2.reshape((4,1)) + yd_ddot
 
         u_traj = Binv @ (q - A)
 

@@ -34,7 +34,7 @@ class SingleActionDrive(BlimpController):
         z = sim.get_var('z')
         z_action = self.z_pid.get_ctrl(self.z_initial - z)
 
-        return np.array([-0.05, 0.05, 0.4, -0.05])
+        return np.array([-0.2, 0.0, 0.0, 0.0])
     
     def get_error(self, sim):
         n = sim.get_current_timestep() + 1

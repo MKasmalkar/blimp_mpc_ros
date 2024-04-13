@@ -65,7 +65,7 @@ class BlimpSim():
             [0, 0, 0, 0],
             [0, 0, 0, 0],
         ])
-        
+       
         B_int = np.zeros((12,12))
         for i in range(10000):
             dTau = dT / 10000

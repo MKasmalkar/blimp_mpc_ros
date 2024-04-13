@@ -143,7 +143,7 @@ class BlimpMPCNode2(Node):
         
         phi = angles[0]
         theta = angles[1]
-        mocap_psi = -angles[2]
+        mocap_psi = angles[2]
 
         psi = None
         
