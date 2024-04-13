@@ -25,7 +25,17 @@ setup(
             'mpc_helix = blimp_mpc_ros.mpc_helix:main',
             'fdbk_lin_helix = blimp_mpc_ros.fdbk_lin_helix:main',
             'blimp_sim = blimp_mpc_ros.blimp_sim:main',
-            'origin_pid = blimp_mpc_ros.origin_pid:main'
+            'origin_pid = blimp_mpc_ros.origin_pid:main',
+            'motion_test = blimp_mpc_ros.motion_test:main',
+            'cs_nlp_origin = blimp_mpc_ros.cs_nlp_origin:main',
+            'mpc_origin = blimp_mpc_ros.mpc_origin:main',
+            'swing_red_ctrl = blimp_mpc_ros.swing_red_ctrl:main',
+            'single_action_drive = blimp_mpc_ros.single_action:main',
+            'blimp2_test = blimp_mpc_ros.blimp2_test:main',
+            'stop_blimp = blimp_mpc_ros.stop_blimp:main',
+            'b2_olqr = blimp_mpc_ros.blimp2_olqr:main',
+            'b2_opid = blimp_mpc_ros.b2_opid:main',
+            'fdbk_lin_line = blimp_mpc_ros.fdbk_lin_line:main'
         ],
     },
 )

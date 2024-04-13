@@ -55,24 +55,30 @@ class BlimpMPCTest(Node):
         )
 
         self.sim = NonlinearBlimpSim(self.dT)
-        self.sim.set_var('x', 1.0)
-        self.sim.set_var('y', 2.0)
-        self.sim.set_var('z', -3.0)
-        self.sim.set_var('phi', np.pi/10)
-        self.sim.set_var('theta', np.pi/4)
-        self.sim.set_var('psi', np.pi/2)
+        self.k = 0
         
     # Function: command_cb
     # Purpose: callback for the command subscriber.
     # Note that inputs are in R4, hence why we (ab)use the Quaternion message type.
     def command_cb(self, quaternion_message):
+        print(str(self.k) + ": vy = " + str(self.sim.state[1]))
+        print("State before command: " + str((self.sim.get_var('x'),
+                                              self.sim.get_var('y'),
+                                              self.sim.get_var('z'),
+                                              self.sim.get_var('vy'))))
+
         self.sim.update_model(np.array([quaternion_message.x,
                                         quaternion_message.y,
                                         quaternion_message.z,
                                         quaternion_message.w]))
-        
-        print(f"Current state: {round(self.sim.get_var('x'), 6)}, {round(self.sim.get_var('y'), 6)}, {round(self.sim.get_var('z'), 6)}, {round(self.sim.get_var('psi'), 6)}")
+        self.k += 1
 
+        print("State after command: " + str((self.sim.get_var('x'),
+                                              self.sim.get_var('y'),
+                                              self.sim.get_var('z'),
+                                              self.sim.get_var('vy'))))
+        # print(f"Current state: {round(self.sim.get_var('x'), 6)}, {round(self.sim.get_var('y'), 6)}, {round(self.sim.get_var('z'), 6)}, {round(self.sim.get_var('psi'), 6)}")
+        
     # Publishes the gyro readings to the topic /agents/blimp{blimp_id}/gyros.
     # NED frame.
     def gyro_publisher_cb(self):
@@ -80,6 +86,7 @@ class BlimpMPCTest(Node):
         msg.x = self.sim.get_var('wx')
         msg.y = self.sim.get_var('wy')
         msg.z = self.sim.get_var('wz')
+        
         self.gyro_publisher.publish(msg)
 
     def mocap_publisher_cb(self):
@@ -92,9 +99,18 @@ class BlimpMPCTest(Node):
         blimp.pose.position.y = self.sim.get_var('y')
         blimp.pose.position.z = self.sim.get_var('z')
 
+        print("Publishing state: " + str((blimp.pose.position.x,
+                                          blimp.pose.position.y,
+                                          blimp.pose.position.z)))
+
+        dynamics_psi = self.sim.get_var('psi')
+        mocap_psi = dynamics_psi % (2*np.pi)
+        if mocap_psi > np.pi:
+            mocap_psi -= 2*np.pi
+
         orientation = euler2quat(np.array([self.sim.get_var('phi'),
                                            self.sim.get_var('theta'),
-                                           self.sim.get_var('psi')]))
+                                           mocap_psi]))
         
         blimp.pose.orientation.x = orientation[0]
         blimp.pose.orientation.y = orientation[1]

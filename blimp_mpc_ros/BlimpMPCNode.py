@@ -280,8 +280,8 @@ class BlimpMPCNode(Node):
         fz = ctrl[2].item()
         tau_z = ctrl[3].item()
 
-        print()
-        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
+        # print()
+        # print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
 
         self.write_command(fx, fy, fz, tau_z)
 

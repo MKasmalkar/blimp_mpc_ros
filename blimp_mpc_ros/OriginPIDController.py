@@ -9,7 +9,7 @@ class OriginPIDController(BlimpController):
     def __init__(self, dT):
         super().__init__(dT)
 
-        self.Kp_pos = 0.0125
+        self.Kp_pos = 0.0125 * 1e-4
         self.Ki_pos = 0.0
         self.Kd_pos = 0.0
 
@@ -21,11 +21,11 @@ class OriginPIDController(BlimpController):
         self.Ki_y = self.Ki_pos
         self.Kd_y = self.Kd_pos
 
-        self.Kp_z = 0.0625
-        self.Ki_z = 0.005
-        self.Kd_z = 0.2
+        self.Kp_z = 0.0625 * 1e-4
+        self.Ki_z = 0.005 * 1e-4
+        self.Kd_z = 0.2 * 1e-4
 
-        self.Kp_psi = 0.0001
+        self.Kp_psi = 0.0001 * 1e-4
         self.Ki_psi = 0.0
         self.Kd_psi = 0.0
 

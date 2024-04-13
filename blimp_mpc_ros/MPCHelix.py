@@ -15,7 +15,7 @@ class MPCHelix(BlimpController):
         self.num_outputs = 6
         
         # Time
-        TRACKING_TIME = 20
+        TRACKING_TIME = 100
         SETTLE_TIME = 100
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
