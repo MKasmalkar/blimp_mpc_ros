@@ -1,5 +1,5 @@
 from . NonlinearBlimpSim import NonlinearBlimpSim
-from . MPCHelix import MPCHelix
+from . CBF import CBF
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
 
@@ -10,7 +10,7 @@ import time
 import rclpy
 from rclpy.node import Node
 
-class BlimpSim(Node):
+class BlimpSimNode(Node):
 
     def __init__(self):
         super().__init__("blimp_sim")
@@ -25,8 +25,8 @@ class BlimpSim(Node):
         WINDOW_TITLE = 'Nonlinear'
 
         Simulator = NonlinearBlimpSim
-        Controller = MPCHelix
-
+        Controller = CBF
+        
         ## SIMULATION
 
         sim = Simulator(dT)
@@ -70,7 +70,7 @@ def main(args=None):
     try:
         rclpy.init(args=args)
 
-        node = BlimpSim()
+        node = BlimpSimNode()
         
         rclpy.spin(node)
 
