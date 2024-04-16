@@ -21,11 +21,16 @@ class OriginLQRController(BlimpController):
         	[0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0, 0],
         	[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
         	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000],
         ])
-        self.R = np.eye(4) * 100
+        self.R = np.array([
+        	[100, 0, 0, 0],
+        	[0, 100, 0, 0],
+        	[0, 0, 1, 0],
+        	[0, 0, 0, 1]
+        ])
 
-        self.reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0])
+        self.reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0.2, 0, 0, 0])
 
     def get_ctrl_action(self, sim):
         A = sim.get_A_lin()

@@ -7,43 +7,49 @@ class FeedbackLinLineFollower(BlimpController):
 
     def __init__(self, dT, skip_derivatives=True):
         super().__init__(dT)
-                
-        # Time
-        TRACKING_TIME = 20
-        SETTLE_TIME = 100
-
-        tracking_time = np.arange(0, TRACKING_TIME, dT)
-        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
-
-        time_vec = np.concatenate((tracking_time, settle_time))
-
-        # Trajectory definition
-        m = 0.2
-
-        x0 = -3.5
-        y0 = 0.0
-        z0 = 0.5
-        psi0 = 0.0
-
-        self.traj_x = np.concatenate((x0 + m*tracking_time, (x0 + m*TRACKING_TIME) * np.ones(len(settle_time))))
-        self.traj_y = np.concatenate((y0 * np.ones(len(tracking_time)), y0 * np.ones(len(settle_time))))
-        self.traj_z = np.concatenate((z0 * np.ones(len(tracking_time)), z0 * np.ones(len(settle_time))))
-        self.traj_psi = np.concatenate((psi0 * np.ones(len(tracking_time)), psi0 * np.ones(len(settle_time))))
-
-        self.traj_x_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_y_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_z_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_psi_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-
-        self.traj_x_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_y_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        
+        self.dT = dT
+     
+        self.ran_before = False
 
     def get_ctrl_action(self, sim):
 
-        sim.start_timer()
+        if not self.ran_before:
+            # Trajectory definition
+            TRACKING_TIME = 20
+            SETTLE_TIME = 100
 
+            tracking_time = np.arange(0, TRACKING_TIME, self.dT)
+            settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, self.dT)
+
+            time_vec = np.concatenate((tracking_time, settle_time))
+            
+            m = 0.05
+            
+            x0 = sim.get_var('x')
+            y0 = sim.get_var('y')
+            z0 = sim.get_var('z')
+            psi0 = sim.get_var('psi')
+            
+            self.traj_x = np.concatenate((x0 + m*tracking_time, (x0 + m*TRACKING_TIME) * np.ones(len(settle_time))))
+            self.traj_y = np.concatenate((y0 * np.ones(len(tracking_time)), y0 * np.ones(len(settle_time))))
+            self.traj_z = np.concatenate((z0 * np.ones(len(tracking_time)), z0 * np.ones(len(settle_time))))
+            self.traj_psi = np.concatenate((psi0 * np.ones(len(tracking_time)), psi0 * np.ones(len(settle_time))))
+            
+            self.traj_x_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_y_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_z_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_psi_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            
+            self.traj_x_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_y_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+            
+            self.ran_before = True
+
+        sim.start_timer()
+        
         n = sim.get_current_timestep()
 
         # Extract state variables
@@ -111,15 +117,15 @@ class FeedbackLinLineFollower(BlimpController):
         e1 = zeta1 - yd
         e2 = zeta2 - yd_dot
         
-        k1 = np.array([1.0, 1.0, 10.0, 0.1])
-        k2 = np.array([1.0, 1.0, 10.0, 0.01])
+        k1 = np.array([1, 1, 10, 1]).reshape((4,1))
+        k2 = np.array([1, 1, 10, 1]).reshape((4,1))
 
-        q = -k1.reshape((1,4)) @ e1.reshape((4,1)) - k2.reshape((1,4)) @ e2.reshape((4,1)) + yd_ddot
-
+        q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
+        
         u_traj = Binv @ (q - A)
-
+        
         u = u_traj
-
+        
         sim.end_timer()
 
         return u

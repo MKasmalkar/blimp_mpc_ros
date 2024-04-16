@@ -144,7 +144,7 @@ class BlimpMPCNode2(Node):
         phi = angles[0]
         theta = angles[1]
         mocap_psi = angles[2]
-
+        
         psi = None
         
         if self.mocap_k == 0:
@@ -168,8 +168,7 @@ class BlimpMPCNode2(Node):
             psi = mocap_psi + 2*np.pi * self.full_rotations
 
             self.prev_mocap_psi = mocap_psi
-
-
+            
         current_pos_vector = np.array([x, y, z]).reshape((3,1))
         current_ang_vector = np.array([phi, theta, psi]).reshape((3,1))
 
@@ -239,7 +238,7 @@ class BlimpMPCNode2(Node):
 
             ang_vel_dot = (self.ang_vel_history[:, self.mocap_k] - self.ang_vel_history[:, self.mocap_k-1]) / deltaT
             self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
-
+            
     def compute_control(self):
 
         if self.position_history is None \
@@ -304,7 +303,7 @@ class BlimpMPCNode2(Node):
         self.sim.update_history()
         
         print()
-        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 10)}, {round(fy, 10)}, {round(fz, 10)}, {round(tau_z, 10)}")
+        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi*180/np.pi, 6)}\nControl: {round(fx, 10)}, {round(fy, 10)}, {round(fz, 10)}, {round(tau_z, 10)}")
 
         self.write_command(fx, fy, fz, tau_z)
 
@@ -319,7 +318,7 @@ class BlimpMPCNode2(Node):
         back_left = np.sqrt(2)*fx*np.heaviside(fx, 0.5)/2 - np.sqrt(2)*fy*np.heaviside(-fy, 0.5)/2 + 2*tz*np.heaviside(tz, 0.5)/dc
         front_left = -np.sqrt(2)*fx*np.heaviside(-fx, 0.5)/2 - np.sqrt(2)*fy*np.heaviside(-fy, 0.5)/2 - 2*tz*np.heaviside(-tz, 0.5)/dc
         z_right = fz/2
-        z_left = fz/2
+        z_left = -fz/2
         f = np.array([front_right, back_right, back_left, front_left, z_right, z_left])
 
         return f
