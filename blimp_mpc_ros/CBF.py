@@ -2,8 +2,9 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import time
-from . BlimpController import BlimpController
-from . parameters import *
+from BlimpController import BlimpController
+from parameters import *
+import sys
 
 class CBF(BlimpController):
 
@@ -14,29 +15,84 @@ class CBF(BlimpController):
         self.num_inputs = 4
         self.num_outputs = 6
         
+        # Trajectory definition
+        TRACKING_TIME = 100
+
+        time_vec = np.arange(0, TRACKING_TIME + 1/self.dT, self.dT)
+        
+        x0 = 0
+        y0 = 0
+        z0 = 0
+        psi0 = 0
+        
+        self.z0 = z0
+
+        traj_z_bounds = 1
+        self.safe_z_bounds = 0.5
+        
+        traj_z_max = z0 + traj_z_bounds / 2
+        traj_z_min = z0 - traj_z_bounds / 2
+        
+        safe_z_max = z0 + self.safe_z_bounds / 2
+        safe_z_min = z0 - self.safe_z_bounds / 2
+        
+        x_speed = 0.05
+        
+        self.traj_x = x0 + x_speed*time_vec
+        self.traj_y = y0 * np.ones(len(time_vec))
+        self.traj_psi = psi0 * np.ones(len(time_vec))
+        
+        self.traj_x_dot = x_speed * np.ones(len(time_vec))
+        self.traj_y_dot = np.zeros(len(time_vec))
+        self.traj_psi_dot = np.zeros(len(time_vec))
+        
+        self.traj_z = np.empty(len(time_vec))
+        self.traj_z_dot = np.empty(len(time_vec))
+        
+        z_speed = 0.02
+        z_ctr = z0
+        direction = -1
+        for i in range(len(time_vec)):
+            if direction == 1 and z_ctr > traj_z_max:
+                direction = -1
+            elif direction == -1 and z_ctr < traj_z_min:
+                direction = 1
+            
+            self.traj_z[i]     = z_ctr    
+            self.traj_z_dot[i] = direction * z_speed
+            
+            z_ctr = z_ctr + direction * z_speed * self.dT
+            
+        self.traj_x_ddot = np.zeros(len(time_vec))
+        self.traj_y_ddot = np.zeros(len(time_vec))
+        self.traj_z_ddot = np.zeros(len(time_vec))
+        self.traj_psi_ddot = np.zeros(len(time_vec))
+        
         self.ran_before = False
         
     def get_ctrl_action(self, sim):
-
+        
         if not self.ran_before:
             # Trajectory definition
             TRACKING_TIME = 100
 
-            time_vec = np.arange(0, TRACKING_TIME, self.dT)
+            time_vec = np.arange(0, TRACKING_TIME + 1/self.dT, self.dT)
             
             x0 = sim.get_var('x')
             y0 = sim.get_var('y')
             z0 = sim.get_var('z')
             psi0 = sim.get_var('psi')
             
+            self.z0 = z0
+
             traj_z_bounds = 1
-            safe_z_bounds = 0.5
+            self.safe_z_bounds = 0.5
             
             traj_z_max = z0 + traj_z_bounds / 2
             traj_z_min = z0 - traj_z_bounds / 2
             
-            safe_z_max = z0 + safe_z_bounds / 2
-            safe_z_min = z0 - safe_z_bounds / 2
+            safe_z_max = z0 + self.safe_z_bounds / 2
+            safe_z_min = z0 - self.safe_z_bounds / 2
             
             x_speed = 0.05
             
@@ -70,63 +126,6 @@ class CBF(BlimpController):
             self.traj_z_ddot = np.zeros(len(time_vec))
             self.traj_psi_ddot = np.zeros(len(time_vec))
             
-                
-            # Get A matrix corresponding to zero state vector equilibrium position
-            A_dis = sim.get_A_dis()
-            self.B = sim.get_B_dis()
-
-            self.C = np.matrix([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-            self.D = np.zeros((self.num_outputs, self.num_inputs))
-
-            self.P = np.identity(self.num_outputs)
-            self.Q = np.identity(self.num_outputs)
-            self.R = np.identity(self.num_inputs)
-
-            xmin = np.matrix([[-np.inf],
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf],   # x
-                            [-np.inf],   # y
-                            [-np.inf],   # z
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf]
-                            ])
-
-            xmax = np.matrix([[np.inf],
-                            [np.inf],
-                            [np.inf],
-                            [np.inf],
-                            [np.inf],
-                            [np.inf],
-                            [np.inf],   # x
-                            [np.inf],   # y
-                            [np.inf],   # z
-                            [np.inf],
-                            [np.inf],
-                            [np.inf]
-                            ])
-
-            umin = np.matrix([[-np.inf],
-                            [-np.inf],
-                            [-np.inf],
-                            [-np.inf]])
-
-            umax = np.matrix([[np.inf],
-                            [np.inf],
-                            [np.inf],
-                            [np.inf]])
-            
-            self.N = 250
-
             self.env = gp.Env(empty=True)
             self.env.setParam('OutputFlag', 0)
             self.env.setParam('LogToConsole', 0)
@@ -134,43 +133,12 @@ class CBF(BlimpController):
 
             self.m = gp.Model(env=self.env)
 
-            self.x = self.m.addMVar(shape=(self.N+1, self.order),
-                            lb=xmin.T, ub=xmax.T, name='x')
-            self.y = self.m.addMVar(shape=(self.N+1, self.num_outputs),
-                            lb=-GRB.INFINITY, ub=GRB.INFINITY, name='y')
-            self.z = self.m.addMVar(shape=(self.N+1, self.num_outputs),
-                            lb=-GRB.INFINITY, ub=GRB.INFINITY, name='z')
-            self.u = self.m.addMVar(shape=(self.N, self.num_inputs),
-                            lb=umin.T, ub=umax.T, name='u')
-            
-            self.ic_constraint = self.m.addConstr(self.x[0, :] == np.zeros((1, 12)).flatten(), name='ic')
+            self.mu = self.m.addMVar(shape=(self.num_inputs, 1),
+                                     lb=-GRB.INFINITY, ub=GRB.INFINITY)
 
-            for k in range(self.N):
-                self.m.addConstr(self.y[k, :] == self.C @ self.x[k, :])
-                self.m.addConstr(self.x[k+1, :] - self.B @ self.u[k, :] == A_dis @ self.x[k, :],
-                                    name='dynamics' + str(k))
-                
-            self.error_constraints = []
-            for k in range(self.N):
-                self.error_constraints.append(
-                    # z = error
-                    # z = y - reference
-                    # => y - z = reference
-                    self.m.addConstr(self.y[k, :] - self.z[k, :] == np.zeros((1, self.num_outputs)).flatten(),
-                                     name='error' + str(k)))
+            self.cbf_constraint = self.m.addConstr(0 == 0)
 
-            # terminal cost
-            obj1 = self.z[self.N, :] @ self.P @ self.z[self.N, :]
-            
-            # running state/error cost
-            obj2 = sum(self.z[k, :] @ self.Q @ self.z[k, :] for k in range(self.N))
-            
-            # running input cost
-            obj3 = sum(self.u[k, :] @ self.R @ self.u[k, :] for k in range(self.N))
-
-            self.m.setObjective(obj1 + obj2 + obj3)
-
-            self.m.update()
+            self.gamma = 1
             
             self.ran_before = True
 
@@ -205,7 +173,6 @@ class CBF(BlimpController):
 
         ## Feedback-linearized tracking controller
 
-        # Compute input to integrator chain
         A = np.array([[v_y__b*(- np.cos(phi)*np.cos(psi)*psi_dot + np.sin(phi)*np.sin(psi)*phi_dot + ((np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta))*(D_vxy__CB*I_x + m_RB*m_z*r_z_gb__b*v_z__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + np.cos(phi)*np.cos(psi)*np.sin(theta)*phi_dot + np.cos(psi)*np.cos(theta)*np.sin(phi)*theta_dot - np.sin(phi)*np.sin(psi)*np.sin(theta)*psi_dot) + w_z__b*(((I_x*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2))*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)) + np.cos(psi)*np.cos(theta)*((I_y*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2))) - v_z__b*((D_vz__CB*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z - np.cos(phi)*np.sin(psi)*phi_dot - np.cos(psi)*np.sin(phi)*psi_dot + np.cos(psi)*np.sin(phi)*np.sin(theta)*phi_dot + np.cos(phi)*np.sin(psi)*np.sin(theta)*psi_dot - np.cos(phi)*np.cos(psi)*np.cos(theta)*theta_dot + (m_RB*r_z_gb__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*np.cos(psi)*np.cos(theta)*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - w_x__b*(((m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z + ((np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta))*(I_x*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*np.cos(psi)*np.cos(theta)*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*(((m_x*v_x__b + m_RB*r_z_gb__b*w_y__b)*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z - (np.cos(psi)*np.cos(theta)*(I_y*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*w_z__b*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - v_x__b*(np.cos(theta)*np.sin(psi)*psi_dot + np.cos(psi)*np.sin(theta)*theta_dot + (np.cos(psi)*np.cos(theta)*(D_vxy__CB*I_y + m_RB*m_z*r_z_gb__b*v_z__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + (f_g*m_RB*r_z_gb__b**2*np.cos(theta)*np.sin(phi)*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.cos(psi)*np.cos(theta)*np.sin(theta))/(I_y*m_x - m_RB**2*r_z_gb__b**2)],
                     [v_z__b*((D_vz__CB*(np.cos(psi)*np.sin(phi) - np.cos(phi)*np.sin(psi)*np.sin(theta)))/m_z - np.cos(phi)*np.cos(psi)*phi_dot + np.sin(phi)*np.sin(psi)*psi_dot + np.cos(phi)*np.cos(psi)*np.sin(theta)*psi_dot + np.cos(phi)*np.cos(theta)*np.sin(psi)*theta_dot - np.sin(phi)*np.sin(psi)*np.sin(theta)*phi_dot + (m_RB*r_z_gb__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*np.cos(theta)*np.sin(psi)*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - w_z__b*(((I_x*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2))*(np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta)) - np.cos(theta)*np.sin(psi)*((I_y*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2))) - v_y__b*(np.cos(psi)*np.sin(phi)*phi_dot + np.cos(phi)*np.sin(psi)*psi_dot + ((np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta))*(D_vxy__CB*I_x + m_RB*m_z*r_z_gb__b*v_z__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - np.cos(phi)*np.sin(psi)*np.sin(theta)*phi_dot - np.cos(psi)*np.sin(phi)*np.sin(theta)*psi_dot - np.cos(theta)*np.sin(phi)*np.sin(psi)*theta_dot) + w_x__b*(((m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.cos(psi)*np.sin(phi) - np.cos(phi)*np.sin(psi)*np.sin(theta)))/m_z + ((np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta))*(I_x*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (I_z*m_RB*r_z_gb__b*np.cos(theta)*np.sin(psi)*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - w_y__b*(((m_x*v_x__b + m_RB*r_z_gb__b*w_y__b)*(np.cos(psi)*np.sin(phi) - np.cos(phi)*np.sin(psi)*np.sin(theta)))/m_z + (np.cos(theta)*np.sin(psi)*(I_y*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*w_z__b*(np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - v_x__b*(- np.cos(psi)*np.cos(theta)*psi_dot + np.sin(psi)*np.sin(theta)*theta_dot + (np.cos(theta)*np.sin(psi)*(D_vxy__CB*I_y + m_RB*m_z*r_z_gb__b*v_z__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - (f_g*m_RB*r_z_gb__b**2*np.cos(theta)*np.sin(phi)*(np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.cos(theta)*np.sin(psi)*np.sin(theta))/(I_y*m_x - m_RB**2*r_z_gb__b**2)],
                     [w_x__b*((np.cos(theta)*np.sin(phi)*(I_x*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (np.cos(phi)*np.cos(theta)*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/m_z + (I_z*m_RB*r_z_gb__b*np.sin(theta)*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*((np.sin(theta)*(I_y*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (np.cos(phi)*np.cos(theta)*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/m_z - (I_z*m_RB*r_z_gb__b*np.cos(theta)*np.sin(phi)*w_z__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - v_x__b*(np.cos(theta)*theta_dot - (np.sin(theta)*(D_vxy__CB*I_y + m_RB*m_z*r_z_gb__b*v_z__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - w_z__b*(np.cos(theta)*np.sin(phi)*((I_x*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) + (np.sin(theta)*(I_y*m_y*v_y__b - m_RB**2*r_z_gb__b**2*v_y__b + I_x*m_RB*r_z_gb__b*w_x__b - I_y*m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - v_z__b*(np.cos(theta)*np.sin(phi)*phi_dot + np.cos(phi)*np.sin(theta)*theta_dot + (D_vz__CB*np.cos(phi)*np.cos(theta))/m_z + (m_RB*r_z_gb__b*np.sin(theta)*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*np.cos(theta)*np.sin(phi)*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - v_y__b*(- np.cos(phi)*np.cos(theta)*phi_dot + np.sin(phi)*np.sin(theta)*theta_dot + (np.cos(theta)*np.sin(phi)*(D_vxy__CB*I_x + m_RB*m_z*r_z_gb__b*v_z__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - (f_g*m_RB*r_z_gb__b**2*np.sin(theta)**2)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.sin(phi)**2*(np.sin(theta)**2 - 1))/(I_x*m_y - m_RB**2*r_z_gb__b**2)],
@@ -248,76 +215,54 @@ class CBF(BlimpController):
 
         q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
         
-        u_traj = Binv @ (q - A)
+        k_x = Binv @ (q - A)
+
+        ## Control barrier function
         
-        n = sim.get_current_timestep()
+        dZ = z - self.z0
 
-        reference = np.array([
-            self.traj_x[n:min(n+self.N, len(self.traj_x))],
-            self.traj_y[n:min(n+self.N, len(self.traj_y))],
-            self.traj_z[n:min(n+self.N, len(self.traj_z))],
-            np.zeros(min(self.N, len(self.traj_x) - n)),
-            np.zeros(min(self.N, len(self.traj_x) - n)),
-            self.traj_psi[n:min(n+self.N, len(self.traj_psi))]
-        ])
+        h = 1/2 * (-dZ**4 + (self.safe_z_bounds/2)**4)
+        psi1 = 2*((-dZ))**3*(np.cos(phi)*np.cos(theta)*v_z__b - np.sin(theta)*v_x__b + np.cos(theta)*np.sin(phi)*v_y__b) + self.gamma*h
+        
+        lfpsi1 = (2*self.gamma*((-dZ))**3 - 6*((-dZ))**2*(np.cos(phi)*np.cos(theta)*v_z__b - np.sin(theta)*v_x__b + np.cos(theta)*np.sin(phi)*v_y__b))*(np.cos(phi)*np.cos(theta)*v_z__b - np.sin(theta)*v_x__b + np.cos(theta)*np.sin(phi)*v_y__b) + 2*((-dZ))**3*(np.cos(phi)*np.cos(theta)*v_y__b - np.cos(theta)*np.sin(phi)*v_z__b)*(w_x__b + np.cos(phi)*np.tan(theta)*w_z__b + np.sin(phi)*np.tan(theta)*w_y__b) - 2*((-dZ))**3*(np.cos(phi)*w_y__b - np.sin(phi)*w_z__b)*(np.cos(theta)*v_x__b + np.cos(phi)*np.sin(theta)*v_z__b + np.sin(phi)*np.sin(theta)*v_y__b) - 2*np.sin(theta)*((-dZ))**3*(w_z__b*((I_y*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - v_x__b*((D_vxy__CB*I_y)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*m_z*r_z_gb__b*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*((D_omega_xy__CB*m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (I_y*m_z*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + (m_RB*r_z_gb__b*v_z__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (I_z*m_RB*r_z_gb__b*w_x__b*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.sin(theta))/((I_y*m_x - m_RB**2*r_z_gb__b**2)*(np.cos(theta)**2 + np.sin(theta)**2))) - 2*np.cos(theta)*np.sin(phi)*((-dZ))**3*(w_z__b*((I_x*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) + v_y__b*((D_vxy__CB*I_x)/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (m_RB*m_z*r_z_gb__b*v_z__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2)) + w_x__b*((D_omega_xy__CB*m_RB*r_z_gb__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (I_x*m_z*v_z__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - (m_RB*r_z_gb__b*v_z__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*w_y__b*w_z__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.cos(theta)*np.sin(phi))/((I_x*m_y - m_RB**2*r_z_gb__b**2)*(np.cos(phi)**2*np.cos(theta)**2 + np.cos(phi)**2*np.sin(theta)**2 + np.cos(theta)**2*np.sin(phi)**2 + np.sin(phi)**2*np.sin(theta)**2))) - 2*np.cos(phi)*np.cos(theta)*((-dZ))**3*((w_x__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/m_z - (w_y__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/m_z + (D_vz__CB*v_z__b)/m_z)
+        lgpsi1 = np.array(
+            [-2*np.sin(theta)*((-dZ))**3*(I_y/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)), 2*np.cos(theta)*np.sin(phi)*((-dZ))**3*(I_x/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*r_z_tg__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2)), (2*np.cos(phi)*np.cos(theta)*((-dZ))**3)/m_z, 0]
+        ).reshape((1,4))
 
-        sim_state = sim.get_state()
+        self.m.remove(self.cbf_constraint)
+        self.cbf_constraint = self.m.addConstr(lfpsi1 + lgpsi1 @ self.mu >= -self.gamma*psi1, "cbf")
 
-        # A matrix is generated assuming psi = 0
-        # need to perform some rotations to account for this
+        obj = (self.mu.T - k_x.T) @ (self.mu - k_x)
+        self.m.setObjective(obj)
 
-        psi = sim_state[11].item()
-
-        v_b = np.array([
-            [sim_state[0].item()],
-            [sim_state[1].item()],
-            [sim_state[2].item()]
-        ])
-
-        v_n = R_b__n(0, 0, psi) @ v_b
-
-        state = np.array([
-            v_n[0].item(),
-            v_n[1].item(),
-            v_n[2].item(),
-            sim_state[3].item(),
-            sim_state[4].item(),
-            sim_state[5].item(),
-            sim_state[6].item(),
-            sim_state[7].item(),
-            sim_state[8].item(),
-            sim_state[9].item(),
-            sim_state[10].item(),
-            psi
-        ])
-
-        self.ic_constraint.rhs = state
-
-        for k in range(self.N):
-            if k < reference.shape[1]:
-                self.error_constraints[k].rhs = reference[:, k]
-            else:
-                self.m.remove(self.error_constraints[k])
-            
         self.m.optimize()
 
-        u_orig = self.u.X[0].T
+        if self.m.Status == 4:
+            self.m.computeIIS()
 
-        u_rot = R_b__n_inv(0, 0, psi) @ np.array([u_orig[0], u_orig[1], u_orig[2]]).T
+            print("\nModel is infeasible")
 
-        u = np.array([
-            [u_rot[0].item()],
-            [u_rot[1].item()],
-            [u_rot[2].item()],
-            [u_orig[3].item()]
-        ])
+            # Print out the IIS constraints and variables
+            print('The following constraints and variables are in the IIS:')
 
-        #print(self.m.status)
-        #print(np.round(self.u.X[0].T, 3))
+            print("Constraints:")
+            for c in self.m.getConstrs():
+                if c.IISConstr: print(f'\t{c.constrname}: {self.m.getRow(c)} {c.Sense} {c.RHS}')
+
+            print("Variables:")
+            for v in self.m.getVars():
+                if v.IISLB: print(f'\t{v.varname} >= {v.LB}')
+                if v.IISUB: print(f'\t{v.varname} <= {v.UB}')
+                sys.exit(1)
+            print()
+
+        u = self.mu.X
         
+        psi1_dot = lfpsi1 + lgpsi1 @ u.reshape((4,1))
+
         sim.end_timer()
 
-        return u
+        return u.reshape((4,1))
         
     def get_trajectory(self):
         return (self.traj_x,
