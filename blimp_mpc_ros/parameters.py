@@ -6,6 +6,7 @@ import numpy as np
 # Center of gravity to center of buoyancy
 r_z_gb__b = 0.08705
 r_gb__b = np.array([0, 0, r_z_gb__b]).T
+
 r_z_tg__b = 0.13 - r_z_gb__b
 
 ## Inertia matrix
