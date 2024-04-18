@@ -261,7 +261,7 @@ class BlimpMPCNode(Node):
                                               ang_dot.reshape((3,1))))
                 
             ang_vel_b = np.linalg.inv(T(phi_avg, theta_avg)) @ ang_dot
-            self.d_ang_vel_history = np.hstack((self.d_ang_vel_history, ang_vel_b.reshape((3,1))))
+            self.avl_history = np.hstack((self.avl_history, ang_vel_b.reshape((3,1))))
             
             d_ang_vel = (self.d_ang_history[:, self.mocap_k] - self.d_ang_history[:, self.mocap_k-1]) / deltaT
             self.d_avl_history = np.hstack((self.d_avl_history, d_ang_vel.reshape((3,1))))

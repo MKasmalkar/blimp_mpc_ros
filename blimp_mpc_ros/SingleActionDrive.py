@@ -34,8 +34,6 @@ class SingleActionDrive(BlimpController):
         z = sim.get_var('z')
         z_action = self.z_pid.get_ctrl(self.z_initial - z)
 
-        print(sim.get_var('phi')*180/np.pi, sim.get_var('theta')*180/np.pi, sim.get_var('psi')*180/np.pi)
-
         return np.array([0.0, 0.0, 0.0, 0.0])
     
     def get_error(self, sim):

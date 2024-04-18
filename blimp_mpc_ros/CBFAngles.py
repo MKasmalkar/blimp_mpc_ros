@@ -2,8 +2,8 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import time
-from BlimpController import BlimpController
-from parameters import *
+from . BlimpController import BlimpController
+from . parameters import *
 import sys
 
 class CBFAngles(BlimpController):
