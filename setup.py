@@ -35,7 +35,8 @@ setup(
             'stop_blimp = blimp_mpc_ros.stop_blimp:main',
             'b2_olqr = blimp_mpc_ros.blimp2_olqr:main',
             'b2_opid = blimp_mpc_ros.b2_opid:main',
-            'fdbk_lin_line = blimp_mpc_ros.fdbk_lin_line:main'
+            'fdbk_lin_line = blimp_mpc_ros.fdbk_lin_line:main',
+            'blimp_data = blimp_mpc_ros.blimp_data:main'
         ],
     },
 )

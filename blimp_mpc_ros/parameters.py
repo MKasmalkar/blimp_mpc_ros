@@ -71,7 +71,7 @@ m_Az = 0.0545
 m_Axy = m_Ax
 
 I_Ax = 0.0
-I_Ay = 0.0
+I_Ay = I_Ax
 I_Az = 0.0
 I_Axy = I_Ax
 
@@ -109,7 +109,8 @@ D_vy__CB = D_vx__CB
 D_vz__CB = 0.0480
 D_vxy__CB = D_vx__CB
 
-D_wx__CB = 0.000826
+# D_wx__CB = 0.000862
+D_wx__CB = 0.000862
 D_wy__CB = D_wx__CB
 D_wz__CB = D_wx__CB
 D_omega_xy__CB = D_wx__CB

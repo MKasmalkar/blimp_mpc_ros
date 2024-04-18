@@ -1,5 +1,6 @@
 from . NonlinearBlimpSim import NonlinearBlimpSim
 from . OriginLQRController import OriginLQRController
+from . SingleActionDrive import SingleActionDrive
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
 
@@ -10,22 +11,20 @@ import time
 import rclpy
 from rclpy.node import Node
 
-class BlimpSimNode(Node):
 
-    def __init__(self):
-        super().__init__("blimp_sim")
-        
-        ## PARAMETERS
-
+def main(args=None):
+    try:
         dT = 0.05 
-        STOP_TIME = 120
-        PLOT_ANYTHING = True
+        STOP_TIME = 7
+        PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 
         WINDOW_TITLE = 'Nonlinear'
 
         Simulator = NonlinearBlimpSim
-        Controller = OriginLQRController
+        Controller = SingleActionDrive
+        
+        print("Running blimp simulator")
         
         ## SIMULATION
 
@@ -39,53 +38,48 @@ class BlimpSimNode(Node):
         ctrl = Controller(dT)
         ctrl.init_sim(sim)
         
-        sim.set_var('vx', 0.0005157)
-        sim.set_var('vy', 0.00055818)
-        sim.set_var('vz', -0.001037)
-        sim.set_var('wx', -0.00445598)
-        sim.set_var('wy', -0.0016)
-        sim.set_var('wz', 0.0054)
-        sim.set_var('x', -2.981)
-        sim.set_var('y', 0.07118)
-        sim.set_var('z', -1.098)
-        sim.set_var('phi', 0.0408)
-        sim.set_var('theta', 0.1657)
-        sim.set_var('psi', 0.03557)
-
-        try:
-            for n in range(int(STOP_TIME / dT)):
-                print("Time: " + str(round(n*dT, 2)))
-                u = ctrl.get_ctrl_action(sim)
-                sim.update_model(u)
-                
-                print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")
-
-                plotter.update_plot(sim, ctrl)
-                
-                if plotter.window_was_closed():
-                    break
-
-        except KeyboardInterrupt:
-            print("Done!")
-            sys.exit(0)
-
-        finally:
-            logger = BlimpLogger("logfile.csv")
-            logger.log(sim, ctrl)
-
-
-def main(args=None):
-    print('Running helix MPC simulated')
-
-    try:
-        rclpy.init(args=args)
-
-        node = BlimpSimNode()
+        sim.set_var('vx', -0.00131)
+        sim.set_var('vy', 0.0485)
+        sim.set_var('vz', -0.000369)
+        sim.set_var('wx', -0.101)
+        sim.set_var('wy', -0.07715)
+        sim.set_var('wz', 0.15069)
+        sim.set_var('x', -2.59867)
+        sim.set_var('y', -0.090999)
+        sim.set_var('z', -0.985318)
+        sim.set_var('phi', 0.039786)
+        sim.set_var('theta', 0.15306)
+        sim.set_var('psi', -0.078)
         
-        rclpy.spin(node)
+        sim.set_var_dot('vx', 17.3285)
+        sim.set_var_dot('vy', -10.097)
+        sim.set_var_dot('vz', -1.57)
+        sim.set_var_dot('wx', -0.101)
+        sim.set_var_dot('wy', -0.077)
+        sim.set_var_dot('wz', 0.1506)
+        sim.set_var_dot('x', 0.00272)
+        sim.set_var_dot('y', 0.048)
+        sim.set_var_dot('z', 0.0017)
+        sim.set_var_dot('phi', -0.13127)
+        sim.set_var_dot('theta', -0.394)
+        sim.set_var_dot('psi', 0.31634)
 
-    except KeyboardInterrupt:
-        node.destroy_node()
+        for n in range(int(STOP_TIME / dT)):
+            print("Time: " + str(round(n*dT, 2)))
+            u = ctrl.get_ctrl_action(sim)
+            sim.update_model(u)
+            
+            print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")
+
+            plotter.update_plot(sim, ctrl)
+            
+            if plotter.window_was_closed():
+                raise KeyboardInterrupt()
+            
+    finally:
+        print("Logging to logfile.csv")
+        logger = BlimpLogger("logfile.csv")
+        logger.log(sim, ctrl)
 
 if __name__ == '__main__':
     main()

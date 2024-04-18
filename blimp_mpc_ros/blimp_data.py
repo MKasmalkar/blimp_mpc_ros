@@ -1,39 +1,41 @@
-from NonlinearBlimpSim import NonlinearBlimpSim
+from . NonlinearBlimpSim import NonlinearBlimpSim
 
-from CasadiNonlinearHelix import CasadiNonlinearHelix
+from . BlimpPlotter import BlimpPlotter
+from . BlimpLogger import BlimpLogger
 
-from BlimpPlotter import BlimpPlotter
-from BlimpLogger import BlimpLogger
+from . OriginLQRController import OriginLQRController
 
 import numpy as np
 import time
 import sys
 
-## Parameters
 
-TITLE = "Plots"
+def main():
+    ## Parameters
 
-# Neither of these selections matter - these objects
-# just need to be created in order to load and plot
-# the simulation data from the file.
+    TITLE = "Plots"
 
-Simulator = NonlinearBlimpSim
-Controller = CasadiNonlinearHelix
+    # Neither of these selections matter - these objects
+    # just need to be created in order to load and plot
+    # the simulation data from the file.
 
-## Plotting
+    Simulator = NonlinearBlimpSim
+    Controller = OriginLQRController
 
-if len(sys.argv) < 2:
-    print("Please run with data file name as first argument.")
-    sys.exit(0)
+    ## Plotting
 
-dT = 0.05  # will be overridden by data load anyways
-sim = Simulator(dT)
-ctrl = Controller(dT)
-plotter = BlimpPlotter()
+    if len(sys.argv) < 2:
+        print("Please run with data file name as first argument.")
+        sys.exit(0)
 
-sim.load_data(sys.argv[1])
-ctrl.load_data(sys.argv[1])
-plotter.init_plot(TITLE, True)
+    dT = 0.05  # will be overridden by data load anyways
+    sim = Simulator(dT)
+    ctrl = Controller(dT)
+    plotter = BlimpPlotter()
 
-plotter.update_plot(sim, ctrl)
-plotter.block()
+    sim.load_data(sys.argv[1])
+    ctrl.load_data(sys.argv[1])
+    plotter.init_plot(TITLE, True)
+
+    plotter.update_plot(sim, ctrl)
+    plotter.block()

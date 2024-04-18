@@ -21,7 +21,7 @@ class BlimpLogger:
             # want timesteps x data elements
 
             n = sim.get_current_timestep() + 1
-
+            
             time_history = sim.get_time_vec().reshape((n, 1))
             state_history = sim.get_state_history()
             state_dot_history = sim.get_state_dot_history()
