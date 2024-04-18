@@ -21,28 +21,38 @@ class OriginLQRController(BlimpController):
         	[0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         	[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
         	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000],
+        	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         ])
         self.R = np.array([
         	[1, 0, 0, 0],
         	[0, 1, 0, 0],
         	[0, 0, 1, 0],
-        	[0, 0, 0, 1]
+        	[0, 0, 0, 100]
         ])
 
         self.reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, -1.25, 0, 0, 0])
 
-    def get_ctrl_action(self, sim):
+    def init_sim(self, sim):
+        sim.set_var('x', -3.5)
+        sim.set_var('y', 0.5)
+        sim.set_var('z', -1)
+    
         A = sim.get_A_lin()
         B = sim.get_B_lin()
 
-        K = control.lqr(A, B, self.Q, self.R)[0]
+        self.K = control.lqr(A, B, self.Q, self.R)[0]
+
+    def get_ctrl_action(self, sim):
         error = sim.get_state().reshape(12) - self.reference
 
         print(f"Error: {error[6].item()}, {error[7].item()}, {error[8].item()}, {error[11].item()}")
 
-        u = (-K @ error.reshape((12,1))).reshape((4,1))
+        u = (-self.K @ error.reshape((12,1))).reshape((4,1))
         # u_modified = np.array([u[0].item(), u[1].item(), u[2].item(), 0]).reshape((4,1))
+
+        for i in range(len(u)):
+            if abs(u[i].item()) > 0.06:
+                u[i] = u[i].item() / abs(u[i].item()) * 0.06
 
         print(f"Control: {u[0].item()}, {u[1].item()}, {u[2].item()}, {u[3].item()}")
 

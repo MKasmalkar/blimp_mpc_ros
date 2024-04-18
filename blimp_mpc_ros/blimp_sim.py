@@ -1,5 +1,5 @@
 from . NonlinearBlimpSim import NonlinearBlimpSim
-from . CBF import CBF
+from . OriginLQRController import OriginLQRController
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
 
@@ -25,7 +25,7 @@ class BlimpSimNode(Node):
         WINDOW_TITLE = 'Nonlinear'
 
         Simulator = NonlinearBlimpSim
-        Controller = CBF
+        Controller = OriginLQRController
         
         ## SIMULATION
 
@@ -38,10 +38,23 @@ class BlimpSimNode(Node):
 
         ctrl = Controller(dT)
         ctrl.init_sim(sim)
+        
+        sim.set_var('vx', 0.0005157)
+        sim.set_var('vy', 0.00055818)
+        sim.set_var('vz', -0.001037)
+        sim.set_var('wx', -0.00445598)
+        sim.set_var('wy', -0.0016)
+        sim.set_var('wz', 0.0054)
+        sim.set_var('x', -2.981)
+        sim.set_var('y', 0.07118)
+        sim.set_var('z', -1.098)
+        sim.set_var('phi', 0.0408)
+        sim.set_var('theta', 0.1657)
+        sim.set_var('psi', 0.03557)
 
         try:
             for n in range(int(STOP_TIME / dT)):
-                #print("Time: " + str(round(n*dT, 2)))
+                print("Time: " + str(round(n*dT, 2)))
                 u = ctrl.get_ctrl_action(sim)
                 sim.update_model(u)
                 
@@ -59,9 +72,6 @@ class BlimpSimNode(Node):
         finally:
             logger = BlimpLogger("logfile.csv")
             logger.log(sim, ctrl)
-
-            if not plotter.window_was_closed():
-                plotter.block()
 
 
 def main(args=None):

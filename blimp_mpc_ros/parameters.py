@@ -1,4 +1,4 @@
-from operators import *
+from . operators import *
 import numpy as np
 
 ## Blimp model parameters

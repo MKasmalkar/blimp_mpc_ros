@@ -60,7 +60,7 @@ class BlimpMPCNode(Node):
         self.position_history = None    # [x, y, z]
         self.velocity_history = None    # [vx, vy, vz]
         self.angle_history = None       # [phi, theta, psi]
-        self.ang_vel_history = None     # [wx, wy, wz]
+        self.ang_dot_history = None     # [wx, wy, wz]
 
         self.pos_dot_history = None
         self.vel_dot_history = None
@@ -86,6 +86,7 @@ class BlimpMPCNode(Node):
         self.angles_last_message = msg
 
     def read_gyros(self, msg):
+        return
         current_time = time.time()
 
         self.gyro_k += 1
@@ -97,10 +98,10 @@ class BlimpMPCNode(Node):
 
         # TODO: figure out if w_x, etc. are world or body frame
 
-        if self.ang_vel_history is None:
-            self.ang_vel_history = np.array([w_x, w_y, w_z]).reshape((3,1))
+        if self.ang_dot_history is None:
+            self.ang_dot_history = np.array([w_x, w_y, w_z]).reshape((3,1))
         else:
-            self.ang_vel_history = np.hstack((self.ang_vel_history,
+            self.ang_dot_history = np.hstack((self.ang_dot_history,
                                               np.array([w_x, w_y, w_z]).reshape((3,1))))
             
         if self.last_gyro_timestamp == None:
@@ -116,7 +117,7 @@ class BlimpMPCNode(Node):
             deltaT = current_time - self.last_gyro_timestamp
             self.last_gyro_timestamp = current_time
 
-            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_vel_history[:, self.gyro_k-1]) / deltaT
+            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_dot_history[:, self.gyro_k-1]) / deltaT
             self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
 
     def read_mocap(self, msg):
@@ -196,9 +197,10 @@ class BlimpMPCNode(Node):
 
             self.velocity_history = np.array([0, 0, 0]).reshape((3,1))
 
-            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
             self.pos_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
             self.ang_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.ang_vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
             
         else:
             deltaT = current_time - self.last_mocap_timestamp
@@ -230,7 +232,7 @@ class BlimpMPCNode(Node):
             self.pos_dot_history = np.hstack((self.pos_dot_history,
                                               vel_vect_n.reshape((3,1))))
             
-            vel_vect_b = R_b__n_inv(phi, theta, psi) @ vel_vect_n
+            vel_vect_b = R_b__n_inv(phi_avg, theta_avg, psi_avg) @ vel_vect_n
             self.velocity_history = np.hstack((self.velocity_history, vel_vect_b.reshape((3,1))))
             
             vel_dot = (self.velocity_history[:, self.mocap_k] - self.velocity_history[:, self.mocap_k-1]) / deltaT
@@ -255,17 +257,24 @@ class BlimpMPCNode(Node):
                 phi_dot += filter_coeffs[i] * self.ang_dot_history[0, -i]
                 theta_dot += filter_coeffs[i] * self.ang_dot_history[1, -i]
                 psi_dot += filter_coeffs[i] * self.ang_dot_history[2, -i]
-
-
+                
+            ang_dot_n = np.array([phi_dot, theta_dot, psi_dot]).T
+            
             self.ang_dot_history = np.hstack((self.ang_dot_history,
-                                              np.array([phi_dot, theta_dot, psi_dot]).reshape((3,1))))
+                                              ang_dot_n.reshape((3,1))))
+                
+            ang_vel_b = np.linalg.inv(T(phi_avg, theta_avg)) @ ang_dot_n
+            self.ang_dot_history = np.hstack((self.ang_dot_history, ang_vel_b.reshape((3,1))))
+            
+            ang_vel_dot = (self.ang_dot_history[:, self.mocap_k] - self.ang_dot_history[:, self.mocap_k-1]) / deltaT
+            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
             
     def compute_control(self):
         
         if self.position_history is None \
             or self.velocity_history is None \
             or self.angle_history is None \
-            or self.ang_vel_history is None \
+            or self.ang_dot_history is None \
             or self.pos_dot_history is None \
             or self.vel_dot_history is None \
             or self.ang_dot_history is None \
@@ -284,9 +293,9 @@ class BlimpMPCNode(Node):
         theta = self.angle_history[1][self.mocap_k]
         psi = self.angle_history[2][self.mocap_k]
 
-        w_x = self.ang_vel_history[0][self.gyro_k]
-        w_y = self.ang_vel_history[1][self.gyro_k]
-        w_z = self.ang_vel_history[2][self.gyro_k]
+        w_x = self.ang_dot_history[0][self.gyro_k]
+        w_y = self.ang_dot_history[1][self.gyro_k]
+        w_z = self.ang_dot_history[2][self.gyro_k]
 
         self.sim.set_var('x', x)
         self.sim.set_var('y', y)
@@ -310,9 +319,9 @@ class BlimpMPCNode(Node):
         self.sim.set_var_dot('vx', self.vel_dot_history[0][self.mocap_k])
         self.sim.set_var_dot('vy', self.vel_dot_history[1][self.mocap_k])
         self.sim.set_var_dot('vz', self.vel_dot_history[2][self.mocap_k])
-        self.sim.set_var_dot('wx', self.ang_vel_history[0][self.gyro_k])
-        self.sim.set_var_dot('wy', self.ang_vel_history[1][self.gyro_k])
-        self.sim.set_var_dot('wz', self.ang_vel_history[2][self.gyro_k])
+        self.sim.set_var_dot('wx', self.ang_dot_history[0][self.gyro_k])
+        self.sim.set_var_dot('wy', self.ang_dot_history[1][self.gyro_k])
+        self.sim.set_var_dot('wz', self.ang_dot_history[2][self.gyro_k])
         
         ctrl = self.controller.get_ctrl_action(self.sim, )
         fx = ctrl[0].item()
@@ -323,8 +332,8 @@ class BlimpMPCNode(Node):
         self.sim.u = ctrl
         self.sim.update_history()
 
-        # print()
-        # print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
+        print()
+        print(f"State: {round(x, 6)}, {round(y, 6)}, {round(z, 6)}, {round(psi, 6)}\nControl: {round(fx, 6)}, {round(fy, 6)}, {round(fz, 6)}, {round(tau_z, 6)}")
 
         self.write_command(fx, fy, fz, tau_z)
 
