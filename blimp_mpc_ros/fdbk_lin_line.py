@@ -1,7 +1,7 @@
 import rclpy
 
 from . FeedbackLinLineFollower import FeedbackLinLineFollower
-from . BlimpMPCNode2 import BlimpMPCNode2
+from . BlimpMPCNode import BlimpMPCNode
 
 import sys
 
@@ -17,7 +17,7 @@ def main(args=sys.argv):
 
         dT = 0.05
         controller = FeedbackLinLineFollower(dT)
-        node = BlimpMPCNode2(controller, args[1])
+        node = BlimpMPCNode(controller, args[1])
         
         rclpy.spin(node)
 

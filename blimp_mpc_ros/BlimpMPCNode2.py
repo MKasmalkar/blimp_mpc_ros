@@ -79,7 +79,8 @@ class BlimpMPCNode2(Node):
         self.last_gyro_timestamp = None
         self.mocap_k = -1   # index of most recent mocap msg in state history arrays
 
-        self.moving_average_history = 100
+        self.moving_average_history = 50
+        self.moving_average_increment = 5
 
     # def read_gyros(self, msg):
     #     current_time = time.time()
@@ -204,9 +205,9 @@ class BlimpMPCNode2(Node):
             v_z_n_raw = (self.position_history[2][self.mocap_k]
                     - self.position_history[2][self.mocap_k-1]) / deltaT
             
-            v_x_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_x_n_raw) / self.moving_average_history
-            v_y_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_y_n_raw) / self.moving_average_history
-            v_z_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + v_z_n_raw) / self.moving_average_history
+            v_x_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + v_x_n_raw) / self.moving_average_history
+            v_y_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + v_y_n_raw) / self.moving_average_history
+            v_z_n = (np.sum(self.pos_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + v_z_n_raw) / self.moving_average_history
 
             self.pos_dot_history = np.hstack((self.pos_dot_history,
                                               np.array([v_x_n, v_y_n, v_z_n]).reshape((3,1))))
@@ -217,10 +218,10 @@ class BlimpMPCNode2(Node):
                        - self.angle_history[1][self.mocap_k-1]) / deltaT
             psi_dot_raw = (self.angle_history[2][self.mocap_k]
                        - self.angle_history[2][self.mocap_k-1]) / deltaT
-            
-            phi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + phi_dot_raw) / self.moving_average_history
-            theta_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + theta_dot_raw) / self.moving_average_history
-            psi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):]) + psi_dot_raw) / self.moving_average_history
+               
+            phi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + phi_dot_raw) / self.moving_average_history
+            theta_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + theta_dot_raw) / self.moving_average_history
+            psi_dot = (np.sum(self.ang_dot_history[max(0, self.mocap_k-self.moving_average_history):self.mocap_k:self.moving_average_increment]) + psi_dot_raw) / self.moving_average_history
 
             self.ang_dot_history = np.hstack((self.ang_dot_history,
                                               np.array([phi_dot, theta_dot, psi_dot]).reshape((3,1))))
