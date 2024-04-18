@@ -57,15 +57,15 @@ class BlimpMPCNode(Node):
         self.controller.init_sim(self.sim)
 
         # Used for computing derivatives
-        self.position_history = None    # [x, y, z]
-        self.velocity_history = None    # [vx, vy, vz]
-        self.angle_history = None       # [phi, theta, psi]
-        self.ang_dot_history = None     # [wx, wy, wz]
+        self.pos_history = None    # [x, y, z]
+        self.vel_history = None    # [vx, vy, vz]
+        self.ang_history = None       # [phi, theta, psi]
+        self.d_ang_history = None     # [wx, wy, wz]
 
-        self.pos_dot_history = None
-        self.vel_dot_history = None
-        self.ang_dot_history = None
-        self.ang_vel_dot_history = None
+        self.d_pos_history = None
+        self.d_vel_history = None
+        self.d_ang_history = None
+        self.d_avl_history = None
 
         self.full_rotations = 0
         self.prev_mocap_psi = None
@@ -98,10 +98,10 @@ class BlimpMPCNode(Node):
 
         # TODO: figure out if w_x, etc. are world or body frame
 
-        if self.ang_dot_history is None:
-            self.ang_dot_history = np.array([w_x, w_y, w_z]).reshape((3,1))
+        if self.d_ang_history is None:
+            self.d_ang_history = np.array([w_x, w_y, w_z]).reshape((3,1))
         else:
-            self.ang_dot_history = np.hstack((self.ang_dot_history,
+            self.d_ang_history = np.hstack((self.d_ang_history,
                                               np.array([w_x, w_y, w_z]).reshape((3,1))))
             
         if self.last_gyro_timestamp == None:
@@ -110,15 +110,15 @@ class BlimpMPCNode(Node):
             w_y_dot = 0
             w_z_dot = 0
             
-            self.ang_vel_dot_history = np.array([w_x_dot,
+            self.d_avl_history = np.array([w_x_dot,
                                                  w_y_dot,
                                                  w_z_dot]).reshape((3,1))
         else:
             deltaT = current_time - self.last_gyro_timestamp
             self.last_gyro_timestamp = current_time
 
-            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.ang_dot_history[:, self.gyro_k-1]) / deltaT
-            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
+            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.d_ang_history[:, self.gyro_k-1]) / deltaT
+            self.d_avl_history = np.hstack((self.d_avl_history, ang_vel_dot.reshape((3,1))))
 
     def read_mocap(self, msg):
         blimp = msg.rigidbodies[0]
@@ -170,132 +170,129 @@ class BlimpMPCNode(Node):
         current_pos_vector = np.array([x, y, z]).reshape((3,1))
         current_ang_vector = np.array([phi, theta, psi]).reshape((3,1))
 
-        if self.position_history is None:
-            self.position_history = np.array(current_pos_vector).reshape((3, 1))
+        if self.pos_history is None:
+            self.pos_history = np.array(current_pos_vector).reshape((3, 1))
         else:
-            x_avg = 0.3*self.position_history[0, -1] + 0.7*x
-            y_avg = 0.3*self.position_history[1, -1] + 0.7*y
-            z_avg = 0.3*self.position_history[2, -1] + 0.7*z
-            
+            x_avg = 0.3*self.pos_history[0, -1] + 0.7*x
+            y_avg = 0.3*self.pos_history[1, -1] + 0.7*y
+            z_avg = 0.3*self.pos_history[2, -1] + 0.7*z
             current_pos_vector = np.array([x_avg, y_avg, z_avg]).reshape((3,1))
-            
-            self.position_history = np.hstack((self.position_history, current_pos_vector))
+            self.pos_history = np.hstack((self.pos_history, current_pos_vector))
          
-        if self.angle_history is None:
-            self.angle_history = np.array(current_ang_vector).reshape((3, 1))
+        if self.ang_history is None:
+            self.ang_history = np.array(current_ang_vector).reshape((3, 1))
         else:      
-            phi_avg = 0.3*self.angle_history[0, -1] + 0.7*phi
-            theta_avg = 0.3*self.angle_history[1, -1] + 0.7*theta
-            psi_avg = 0.3*self.angle_history[2, -1] + 0.7*psi
-            
+            phi_avg = 0.3*self.ang_history[0, -1] + 0.7*phi
+            theta_avg = 0.3*self.ang_history[1, -1] + 0.7*theta
+            psi_avg = 0.3*self.ang_history[2, -1] + 0.7*psi
             current_ang_vector = np.array([phi_avg, theta_avg, psi_avg]).reshape((3,1))
-
-            self.angle_history = np.hstack((self.angle_history, current_ang_vector))
+            self.ang_history = np.hstack((self.ang_history, current_ang_vector))
 
         if self.last_mocap_timestamp is None:
             self.last_mocap_timestamp = current_time
 
-            self.velocity_history = np.array([0, 0, 0]).reshape((3,1))
+            self.vel_history = np.array([0, 0, 0]).reshape((3,1))
+            self.avl_history = np.array([0, 0, 0]).reshape((3,1))
 
-            self.pos_dot_history = np.array([0, 0, 0]).reshape((3,1))
-            self.vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
-            self.ang_dot_history = np.array([0, 0, 0]).reshape((3,1))
-            self.ang_vel_dot_history = np.array([0, 0, 0]).reshape((3,1))
+            self.d_pos_history = np.array([0, 0, 0]).reshape((3,1))
+            self.d_vel_history = np.array([0, 0, 0]).reshape((3,1))
+            self.d_ang_history = np.array([0, 0, 0]).reshape((3,1))
+            self.d_avl_history = np.array([0, 0, 0]).reshape((3,1))
             
         else:
             deltaT = current_time - self.last_mocap_timestamp
             self.last_mocap_timestamp = current_time
             
-            v_x_n_raw = (self.position_history[0][self.mocap_k]
-                    - self.position_history[0][self.mocap_k-1]) / deltaT
-            v_y_n_raw = (self.position_history[1][self.mocap_k]
-                    - self.position_history[1][self.mocap_k-1]) / deltaT
-            v_z_n_raw = (self.position_history[2][self.mocap_k]
-                    - self.position_history[2][self.mocap_k-1]) / deltaT
+            x_dot_raw = (self.pos_history[0][self.mocap_k]
+                    - self.pos_history[0][self.mocap_k-1]) / deltaT
+            y_dot_raw = (self.pos_history[1][self.mocap_k]
+                    - self.pos_history[1][self.mocap_k-1]) / deltaT
+            z_dot_raw = (self.pos_history[2][self.mocap_k]
+                    - self.pos_history[2][self.mocap_k-1]) / deltaT
            
             filter_coeffs = np.array([0.1, 0.15, 0.15, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
             
-            v_x_n = filter_coeffs[0] * v_x_n_raw
-            v_y_n = filter_coeffs[0] * v_y_n_raw
-            v_z_n = filter_coeffs[0] * v_z_n_raw
+            x_dot = filter_coeffs[0] * x_dot_raw
+            y_dot = filter_coeffs[0] * y_dot_raw
+            z_dot = filter_coeffs[0] * z_dot_raw
             
             for i in range(1, len(filter_coeffs)):
-                if i > self.pos_dot_history.shape[1]:
+                if i > self.d_pos_history.shape[1]:
                     break
             
-                v_x_n += filter_coeffs[i] * self.pos_dot_history[0, -i]
-                v_y_n += filter_coeffs[i] * self.pos_dot_history[1, -i]
-                v_z_n += filter_coeffs[i] * self.pos_dot_history[2, -i]
+                x_dot += filter_coeffs[i] * self.d_pos_history[0, -i]
+                y_dot += filter_coeffs[i] * self.d_pos_history[1, -i]
+                z_dot += filter_coeffs[i] * self.d_pos_history[2, -i]
 
-            vel_vect_n = np.array([v_x_n, v_y_n, v_z_n]).T
+            pos_dot = np.array([x_dot, y_dot, z_dot]).T
             
-            self.pos_dot_history = np.hstack((self.pos_dot_history,
-                                              vel_vect_n.reshape((3,1))))
+            self.d_pos_history = np.hstack((self.d_pos_history,
+                                              pos_dot.reshape((3,1))))
             
-            vel_vect_b = R_b__n_inv(phi_avg, theta_avg, psi_avg) @ vel_vect_n
-            self.velocity_history = np.hstack((self.velocity_history, vel_vect_b.reshape((3,1))))
+            vel_vect_b = R_b__n_inv(phi_avg, theta_avg, psi_avg) @ pos_dot
+            self.vel_history = np.hstack((self.vel_history, vel_vect_b.reshape((3,1))))
             
-            vel_dot = (self.velocity_history[:, self.mocap_k] - self.velocity_history[:, self.mocap_k-1]) / deltaT
-            self.vel_dot_history = np.hstack((self.vel_dot_history, vel_dot.reshape((3,1))))
+            d_vel = (self.vel_history[:, self.mocap_k] - self.vel_history[:, self.mocap_k-1]) / deltaT
+            self.d_vel_history = np.hstack((self.d_vel_history, d_vel.reshape((3,1))))
            
-            
-            phi_dot_raw = (self.angle_history[0][self.mocap_k]
-                       - self.angle_history[0][self.mocap_k-1]) / deltaT
-            theta_dot_raw = (self.angle_history[1][self.mocap_k]
-                       - self.angle_history[1][self.mocap_k-1]) / deltaT
-            psi_dot_raw = (self.angle_history[2][self.mocap_k]
-                       - self.angle_history[2][self.mocap_k-1]) / deltaT
+
+            phi_dot_raw = (self.ang_history[0][self.mocap_k]
+                       - self.ang_history[0][self.mocap_k-1]) / deltaT
+            theta_dot_raw = (self.ang_history[1][self.mocap_k]
+                       - self.ang_history[1][self.mocap_k-1]) / deltaT
+            psi_dot_raw = (self.ang_history[2][self.mocap_k]
+                       - self.ang_history[2][self.mocap_k-1]) / deltaT
             
             phi_dot = filter_coeffs[0] * phi_dot_raw
             theta_dot = filter_coeffs[0] * theta_dot_raw
             psi_dot = filter_coeffs[0] * psi_dot_raw
 
             for i in range(1, len(filter_coeffs)):
-                if i > self.ang_dot_history.shape[1]:
+                if i > self.d_ang_history.shape[1]:
                     break
             
-                phi_dot += filter_coeffs[i] * self.ang_dot_history[0, -i]
-                theta_dot += filter_coeffs[i] * self.ang_dot_history[1, -i]
-                psi_dot += filter_coeffs[i] * self.ang_dot_history[2, -i]
+                phi_dot += filter_coeffs[i] * self.d_ang_history[0, -i]
+                theta_dot += filter_coeffs[i] * self.d_ang_history[1, -i]
+                psi_dot += filter_coeffs[i] * self.d_ang_history[2, -i]
                 
-            ang_dot_n = np.array([phi_dot, theta_dot, psi_dot]).T
+            ang_dot = np.array([phi_dot, theta_dot, psi_dot]).T
             
-            self.ang_dot_history = np.hstack((self.ang_dot_history,
-                                              ang_dot_n.reshape((3,1))))
+            self.d_ang_history = np.hstack((self.d_ang_history,
+                                              ang_dot.reshape((3,1))))
                 
-            ang_vel_b = np.linalg.inv(T(phi_avg, theta_avg)) @ ang_dot_n
-            self.ang_dot_history = np.hstack((self.ang_dot_history, ang_vel_b.reshape((3,1))))
+            ang_vel_b = np.linalg.inv(T(phi_avg, theta_avg)) @ ang_dot
+            self.d_ang_vel_history = np.hstack((self.d_ang_vel_history, ang_vel_b.reshape((3,1))))
             
-            ang_vel_dot = (self.ang_dot_history[:, self.mocap_k] - self.ang_dot_history[:, self.mocap_k-1]) / deltaT
-            self.ang_vel_dot_history = np.hstack((self.ang_vel_dot_history, ang_vel_dot.reshape((3,1))))
+            d_ang_vel = (self.d_ang_history[:, self.mocap_k] - self.d_ang_history[:, self.mocap_k-1]) / deltaT
+            self.d_avl_history = np.hstack((self.d_avl_history, d_ang_vel.reshape((3,1))))
             
     def compute_control(self):
         
-        if self.position_history is None \
-            or self.velocity_history is None \
-            or self.angle_history is None \
-            or self.ang_dot_history is None \
-            or self.pos_dot_history is None \
-            or self.vel_dot_history is None \
-            or self.ang_dot_history is None \
-            or self.ang_vel_dot_history is None:
+        if self.pos_history is None \
+            or self.vel_history is None \
+            or self.ang_history is None \
+            or self.d_ang_history is None \
+            or self.d_pos_history is None \
+            or self.d_vel_history is None \
+            or self.d_ang_history is None \
+            or self.d_avl_history is None:
             return
 
-        x = self.position_history[0][self.mocap_k]
-        y = self.position_history[1][self.mocap_k]
-        z = self.position_history[2][self.mocap_k]
+        x = self.pos_history[0][self.mocap_k]
+        y = self.pos_history[1][self.mocap_k]
+        z = self.pos_history[2][self.mocap_k]
 
-        v_x = self.velocity_history[0][self.mocap_k]
-        v_y = self.velocity_history[1][self.mocap_k]
-        v_z = self.velocity_history[2][self.mocap_k]
+        v_x = self.vel_history[0][self.mocap_k]
+        v_y = self.vel_history[1][self.mocap_k]
+        v_z = self.vel_history[2][self.mocap_k]
 
-        phi = self.angle_history[0][self.mocap_k]
-        theta = self.angle_history[1][self.mocap_k]
-        psi = self.angle_history[2][self.mocap_k]
+        phi = self.ang_history[0][self.mocap_k]
+        theta = self.ang_history[1][self.mocap_k]
+        psi = self.ang_history[2][self.mocap_k]
 
-        w_x = self.ang_dot_history[0][self.gyro_k]
-        w_y = self.ang_dot_history[1][self.gyro_k]
-        w_z = self.ang_dot_history[2][self.gyro_k]
+        w_x = self.avl_history[0][self.gyro_k]
+        w_y = self.avl_history[1][self.gyro_k]
+        w_z = self.avl_history[2][self.gyro_k]
 
         self.sim.set_var('x', x)
         self.sim.set_var('y', y)
@@ -310,18 +307,18 @@ class BlimpMPCNode(Node):
         self.sim.set_var('wy', w_y)
         self.sim.set_var('wz', w_z)
         
-        self.sim.set_var_dot('x', self.pos_dot_history[0][self.mocap_k])
-        self.sim.set_var_dot('y', self.pos_dot_history[1][self.mocap_k])
-        self.sim.set_var_dot('z', self.pos_dot_history[2][self.mocap_k])
-        self.sim.set_var_dot('phi', self.ang_dot_history[0][self.mocap_k])
-        self.sim.set_var_dot('theta', self.ang_dot_history[1][self.mocap_k])
-        self.sim.set_var_dot('psi', self.ang_dot_history[2][self.mocap_k])
-        self.sim.set_var_dot('vx', self.vel_dot_history[0][self.mocap_k])
-        self.sim.set_var_dot('vy', self.vel_dot_history[1][self.mocap_k])
-        self.sim.set_var_dot('vz', self.vel_dot_history[2][self.mocap_k])
-        self.sim.set_var_dot('wx', self.ang_dot_history[0][self.gyro_k])
-        self.sim.set_var_dot('wy', self.ang_dot_history[1][self.gyro_k])
-        self.sim.set_var_dot('wz', self.ang_dot_history[2][self.gyro_k])
+        self.sim.set_var_dot('x', self.d_pos_history[0][self.mocap_k])
+        self.sim.set_var_dot('y', self.d_pos_history[1][self.mocap_k])
+        self.sim.set_var_dot('z', self.d_pos_history[2][self.mocap_k])
+        self.sim.set_var_dot('phi', self.d_ang_history[0][self.mocap_k])
+        self.sim.set_var_dot('theta', self.d_ang_history[1][self.mocap_k])
+        self.sim.set_var_dot('psi', self.d_ang_history[2][self.mocap_k])
+        self.sim.set_var_dot('vx', self.d_vel_history[0][self.mocap_k])
+        self.sim.set_var_dot('vy', self.d_vel_history[1][self.mocap_k])
+        self.sim.set_var_dot('vz', self.d_vel_history[2][self.mocap_k])
+        self.sim.set_var_dot('wx', self.d_avl_history[0][self.gyro_k])
+        self.sim.set_var_dot('wy', self.d_avl_history[1][self.gyro_k])
+        self.sim.set_var_dot('wz', self.d_avl_history[2][self.gyro_k])
         
         ctrl = self.controller.get_ctrl_action(self.sim, )
         fx = ctrl[0].item()
