@@ -28,7 +28,7 @@ def main():
         print("Please run with data file name as first argument.")
         sys.exit(0)
 
-    dT = 0.05  # will be overridden by data load anyways
+    dT = 0.001  # will be overridden by data load anyways
     sim = Simulator(dT)
     ctrl = Controller(dT)
     plotter = BlimpPlotter()

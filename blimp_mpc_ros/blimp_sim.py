@@ -14,8 +14,13 @@ from rclpy.node import Node
 
 def main(args=None):
     try:
-        dT = 0.05 
-        STOP_TIME = 7
+        dT = 0.001 
+        dT_controller = 0.05
+        
+        ctrl_ctr = 0
+        ctrl_period = int(dT_controller / dT)
+        
+        STOP_TIME = 4
         PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 
@@ -38,36 +43,28 @@ def main(args=None):
         ctrl = Controller(dT)
         ctrl.init_sim(sim)
         
-        sim.set_var('vx', -0.00131)
-        sim.set_var('vy', 0.0485)
-        sim.set_var('vz', -0.000369)
-        sim.set_var('wx', -0.101)
-        sim.set_var('wy', -0.07715)
-        sim.set_var('wz', 0.15069)
-        sim.set_var('x', -2.59867)
-        sim.set_var('y', -0.090999)
-        sim.set_var('z', -0.985318)
-        sim.set_var('phi', 0.039786)
-        sim.set_var('theta', 0.15306)
-        sim.set_var('psi', -0.078)
+        sim.set_var('vx', -0.00467)
+        sim.set_var('vy', -0.08222)
+        sim.set_var('vz', -0.050567)
+        sim.set_var('wx', 0.2167)
+        sim.set_var('wy', 0.0543472)
+        sim.set_var('wz', -0.048587)
+        sim.set_var('x', -3.1111)
+        sim.set_var('y', 0.2364)
+        sim.set_var('z', -1.0988)
+        sim.set_var('phi', -0.0056608)
+        sim.set_var('theta', 0.175726)
+        sim.set_var('psi', 0.30198)
         
-        sim.set_var_dot('vx', 17.3285)
-        sim.set_var_dot('vy', -10.097)
-        sim.set_var_dot('vz', -1.57)
-        sim.set_var_dot('wx', -0.101)
-        sim.set_var_dot('wy', -0.077)
-        sim.set_var_dot('wz', 0.1506)
-        sim.set_var_dot('x', 0.00272)
-        sim.set_var_dot('y', 0.048)
-        sim.set_var_dot('z', 0.0017)
-        sim.set_var_dot('phi', -0.13127)
-        sim.set_var_dot('theta', -0.394)
-        sim.set_var_dot('psi', 0.31634)
-
+        u = ctrl.get_ctrl_action(sim)         
         for n in range(int(STOP_TIME / dT)):
             print("Time: " + str(round(n*dT, 2)))
-            u = ctrl.get_ctrl_action(sim)
             sim.update_model(u)
+            
+            ctrl_ctr += 1
+            if ctrl_ctr > ctrl_period:  
+                u = ctrl.get_ctrl_action(sim)         
+                ctrl_ctr = 0
             
             print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")
 
