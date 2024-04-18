@@ -1,5 +1,7 @@
 from . NonlinearBlimpSim import NonlinearBlimpSim
 from . OriginLQRController import OriginLQRController
+from . FeedbackLinLineFollower import FeedbackLinLineFollower
+from . TrackingNoDamping import TrackingNoDamping
 from . SingleActionDrive import SingleActionDrive
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
@@ -14,20 +16,16 @@ from rclpy.node import Node
 
 def main(args=None):
     try:
-        dT = 0.001 
-        dT_controller = 0.05
+        dT = 0.05
         
-        ctrl_ctr = 0
-        ctrl_period = int(dT_controller / dT)
-        
-        STOP_TIME = 4
+        STOP_TIME = 8.65
         PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 
         WINDOW_TITLE = 'Nonlinear'
 
         Simulator = NonlinearBlimpSim
-        Controller = SingleActionDrive
+        Controller = FeedbackLinLineFollower
         
         print("Running blimp simulator")
         
@@ -43,28 +41,23 @@ def main(args=None):
         ctrl = Controller(dT)
         ctrl.init_sim(sim)
         
-        sim.set_var('vx', -0.00467)
-        sim.set_var('vy', -0.08222)
-        sim.set_var('vz', -0.050567)
-        sim.set_var('wx', 0.2167)
-        sim.set_var('wy', 0.0543472)
-        sim.set_var('wz', -0.048587)
-        sim.set_var('x', -3.1111)
-        sim.set_var('y', 0.2364)
-        sim.set_var('z', -1.0988)
-        sim.set_var('phi', -0.0056608)
-        sim.set_var('theta', 0.175726)
-        sim.set_var('psi', 0.30198)
-        
-        u = ctrl.get_ctrl_action(sim)         
+        #sim.set_var('vx', 0.0036)
+        #sim.set_var('vy', -0.00187)
+        #sim.set_var('vz', -0.00912)
+        #sim.set_var('wx', 0.0244)
+        #sim.set_var('wy', 0.0219)
+        #sim.set_var('wz', 0.0136)
+        #sim.set_var('x', -2.8712)
+        #sim.set_var('y', 0.00829)
+        #sim.set_var('z', -0.9544)
+        #sim.set_var('phi', -0.1085)
+        #sim.set_var('theta', 0.095028)
+        #sim.set_var('psi', -0.17227)
+              
         for n in range(int(STOP_TIME / dT)):
             print("Time: " + str(round(n*dT, 2)))
+            u = ctrl.get_ctrl_action(sim)         
             sim.update_model(u)
-            
-            ctrl_ctr += 1
-            if ctrl_ctr > ctrl_period:  
-                u = ctrl.get_ctrl_action(sim)         
-                ctrl_ctr = 0
             
             print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")
 

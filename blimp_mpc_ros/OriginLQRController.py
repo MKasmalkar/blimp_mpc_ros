@@ -24,22 +24,20 @@ class OriginLQRController(BlimpController):
         	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         ])
         self.R = np.array([
-        	[1, 0, 0, 0],
-        	[0, 1, 0, 0],
+        	[100, 0, 0, 0],
+        	[0, 100, 0, 0],
         	[0, 0, 1, 0],
-        	[0, 0, 0, 100]
+        	[0, 0, 0, 1000]
         ])
 
-        self.reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, -1.25, 0, 0, 0])
+        self.reference = np.array([0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0])
 
     def init_sim(self, sim):
-        sim.set_var('x', -3.5)
-        sim.set_var('y', 0.5)
-        sim.set_var('z', -1)
-    
         A = sim.get_A_lin()
         B = sim.get_B_lin()
-
+        
+        print(A)
+       
         self.K = control.lqr(A, B, self.Q, self.R)[0]
 
     def get_ctrl_action(self, sim):
@@ -50,9 +48,9 @@ class OriginLQRController(BlimpController):
         u = (-self.K @ error.reshape((12,1))).reshape((4,1))
         # u_modified = np.array([u[0].item(), u[1].item(), u[2].item(), 0]).reshape((4,1))
 
-        for i in range(len(u)):
-            if abs(u[i].item()) > 0.06:
-                u[i] = u[i].item() / abs(u[i].item()) * 0.06
+        #for i in range(len(u)):
+        #    if abs(u[i].item()) > 0.06:
+        #        u[i] = u[i].item() / abs(u[i].item()) * 0.06
 
         print(f"Control: {u[0].item()}, {u[1].item()}, {u[2].item()}, {u[3].item()}")
 
@@ -62,7 +60,7 @@ class OriginLQRController(BlimpController):
         return np.array([
             sim.get_var_history('x'),
             sim.get_var_history('y'),
-            sim.get_var_history('z'),
+            sim.get_var_history('z') - (-1),
             sim.get_var_history('psi')
         ]).T
     
