@@ -59,15 +59,15 @@ m = rho_air * Venv
 # Venv2 = (m_gon + m_mkr + m_blst + m_env + m_largebat) / (rho_air - rho_he)
 
 # Center of gravity to center of buoyancy
-r_z_gb__b = 0.08705
+r_z_gb__b = 0.09705
 r_gb__b = np.array([0, 0, r_z_gb__b]).T
 r_z_tg__b = dvt - r_z_gb__b
 
 ## Inertia matrix
 
-m_Ax = 0.3566
+m_Ax = 0.0466
 m_Ay = m_Ax
-m_Az = 0.645
+m_Az = 0.0545
 m_Axy = m_Ax
 
 I_Ax = 0.0
@@ -77,8 +77,8 @@ I_Axy = I_Ax
 
 M_A_CB = np.diag([m_Ax, m_Ay, m_Az, I_Ax, I_Ay, I_Az])
 
-m_RB = 0.1049
-I_RBx = 0.5821
+m_RB = 0.1249
+I_RBx = 0.005821
 I_RBy = I_RBx
 I_RBz = I_RBx
 I_RBxy = I_RBx
@@ -96,7 +96,7 @@ m_y = m_RB + m_Ay
 m_z = m_RB + m_Az
 
 I_x = I_RBx + m_RB * r_z_gb__b**2 + I_Ax
-I_y = I_RBy + m_RB * r_z_gb__b**2 + I_Ay
+I_y = I_RBx + m_RB * r_z_gb__b**2 + I_Ay
 I_z = I_RBz + I_Az
 
 g_acc = 9.8
@@ -104,12 +104,12 @@ fg_n = m_RB * np.array([0, 0, g_acc]).T
 f_g = fg_n[2]
 
 ## Aerodynamic damping
-D_vx__CB = 0.0115
+D_vx__CB = 0.0125
 D_vy__CB = D_vx__CB
 D_vz__CB = 0.0480
 D_vxy__CB = D_vx__CB
 
-D_wx__CB = 0.00980
+D_wx__CB = 0.000826
 D_wy__CB = D_wx__CB
 D_wz__CB = D_wx__CB
 D_omega_xy__CB = D_wx__CB
