@@ -37,7 +37,9 @@ setup(
             'b2_opid = blimp_mpc_ros.b2_opid:main',
             'fdbk_lin_line = blimp_mpc_ros.fdbk_lin_line:main',
             'blimp_data = blimp_mpc_ros.blimp_data:main',
-            'cbf_line = blimp_mpc_ros.cbf_line:main'
+            'cbf_line = blimp_mpc_ros.cbf_line:main',
+            'cbf_helix = blimp_mpc_ros.cbf_helix:main',
+            'cbf_triangle = blimp_mpc_ros.cbf_triangle:main'
         ],
     },
 )
