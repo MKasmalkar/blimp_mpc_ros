@@ -4,6 +4,7 @@ from . FeedbackLinLineFollower import FeedbackLinLineFollower
 from . TrackingNoDamping import TrackingNoDamping
 from . SingleActionDrive import SingleActionDrive
 from . CBFHelix import CBFHelix
+from . MPCHelix import MPCHelix
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
 
@@ -23,7 +24,7 @@ def main(args=None):
         
         ctrl_ctr = 0
         
-        STOP_TIME = 120
+        STOP_TIME = 20
         PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 
@@ -57,6 +58,7 @@ def main(args=None):
                 ctrl_ctr = 0
             
             print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")
+            print(f"Control: {round(u[0].item(), 6)}, {round(u[1].item(), 6)}, {round(u[2].item(), 6)}, {round(u[3].item(), 6)}")
 
             plotter.update_plot(sim, ctrl)
             

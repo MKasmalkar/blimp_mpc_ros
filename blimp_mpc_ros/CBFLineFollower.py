@@ -21,7 +21,7 @@ class CBFLineFollower(BlimpController):
 
         self.theta_limit = 20 * np.pi/180
         self.phi_limit = 20 * np.pi/180
-        self.psi_limit = 20 * np.pi/180
+        self.psi_limit = 10 * np.pi/180
         
         tracking_time = np.arange(0, TRACKING_TIME, self.dT)
         settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, self.dT)

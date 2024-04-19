@@ -9,6 +9,38 @@ class FeedbackLinLineFollower(BlimpController):
         super().__init__(dT)
         
         self.dT = dT
+        
+        # Trajectory definition
+        TRACKING_TIME = 20
+        SETTLE_TIME = 100
+
+        tracking_time = np.arange(0, TRACKING_TIME, self.dT)
+        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, self.dT)
+
+        time_vec = np.concatenate((tracking_time, settle_time))
+        
+        m = 0.05
+        
+        x0 = 0
+        y0 = 0
+        z0 = 0
+        psi0 = 0
+        
+        self.traj_x = np.concatenate((x0 + m*tracking_time, (x0 + m*TRACKING_TIME) * np.ones(len(settle_time))))
+        self.traj_y = np.concatenate((y0 * np.ones(len(tracking_time)), y0 * np.ones(len(settle_time))))
+        self.traj_z = np.concatenate((z0 * np.ones(len(tracking_time)), z0 * np.ones(len(settle_time))))
+        self.traj_psi = np.concatenate((psi0 * np.ones(len(tracking_time)), psi0 * np.ones(len(settle_time))))
+        
+        self.traj_x_dot = np.concatenate((m * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_y_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_z_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_psi_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        
+        self.traj_x_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_y_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+        
      
         self.ran_before = False
 
@@ -117,8 +149,8 @@ class FeedbackLinLineFollower(BlimpController):
         e1 = zeta1 - yd
         e2 = zeta2 - yd_dot
         
-        k1 = np.array([1, 1, 1, 1]).reshape((4,1))
-        k2 = np.array([1, 1, 1, 1]).reshape((4,1))
+        k1 = np.array([1, 1, 10, 1]).reshape((4,1))
+        k2 = np.array([1, 1, 10, 1]).reshape((4,1))
 
         q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
         

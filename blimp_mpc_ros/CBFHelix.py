@@ -17,8 +17,9 @@ class CBFHelix(BlimpController):
 
         self.dT = dT
         
-        self.theta_limit = 10 * np.pi/180
-        self.phi_limit = 10 * np.pi/180
+        self.theta_limit = 20 * np.pi/180
+        self.phi_limit = 20 * np.pi/180
+        self.psi_limit = 20 * np.pi/180
 
         # Time
         TRACKING_TIME = 20
@@ -30,7 +31,7 @@ class CBFHelix(BlimpController):
         time_vec = np.concatenate((tracking_time, settle_time))
 
         # Trajectory definition
-        f = 0.05
+        f = 0.01
         self.At = 1
 
         x0 = self.At
@@ -39,7 +40,7 @@ class CBFHelix(BlimpController):
 
         phi0 = 0
         theta0 = 0
-        psi0 = np.pi/2
+        psi0 = 0
 
         v_x0 = 0.0
         v_y0 = 0.0
@@ -71,7 +72,7 @@ class CBFHelix(BlimpController):
         if not self.ran_before:
             
             # Time
-            TRACKING_TIME = 20
+            TRACKING_TIME = 50
             SETTLE_TIME = 100
 
             tracking_time = np.arange(0, TRACKING_TIME, self.dT)
@@ -80,24 +81,27 @@ class CBFHelix(BlimpController):
             time_vec = np.concatenate((tracking_time, settle_time))
 
             # Trajectory definition
-            f = 0.05
+            f = 1/TRACKING_TIME
             
             x0 = sim.get_var('x')
             y0 = sim.get_var('y')
             z0 = sim.get_var('z')
             psi0 = sim.get_var('psi')
             
-            self.At = x0
+            z_max = -0.5
+            z_slope = z_max / TRACKING_TIME
+            
+            self.At = 1
 
-            self.traj_x = np.concatenate((self.At * np.cos(2*np.pi*f*tracking_time), self.At*np.ones(len(settle_time))))
-            self.traj_y = np.concatenate((self.At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-            self.traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
-            self.traj_psi = np.concatenate((psi0 + 2*np.pi*f*tracking_time, (psi0 + 2*np.pi) * np.ones(len(settle_time))))
-
-            self.traj_x_dot = np.concatenate((-2*np.pi*f*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+            self.traj_x = np.concatenate((x0 + (self.At - self.At * np.cos(2*np.pi*f*tracking_time)), x0 * np.ones(len(settle_time))))
+            self.traj_y = np.concatenate((y0 + self.At * np.sin(2*np.pi*f*tracking_time), y0 * np.ones(len(settle_time))))
+            self.traj_z = np.concatenate((z0 + tracking_time * z_slope, (z0 + TRACKING_TIME * z_slope) * np.ones(len(settle_time))))
+            self.traj_psi = np.concatenate((psi0 * np.ones(len(tracking_time)), psi0 * np.ones(len(settle_time))))
+            
+            self.traj_x_dot = np.concatenate((2*np.pi*f*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
             self.traj_y_dot = np.concatenate((2*np.pi*f*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-            self.traj_z_dot = np.concatenate((-1/10 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
-            self.traj_psi_dot = np.concatenate((2*np.pi*f * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_z_dot = np.concatenate((z_slope * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
+            self.traj_psi_dot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 
             self.traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
             self.traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
@@ -116,9 +120,11 @@ class CBFHelix(BlimpController):
 
             self.th_cbf_constraint = self.m.addConstr(0 == 0)
             self.ph_cbf_constraint = self.m.addConstr(0 == 0)
+            self.ps_cbf_constraint = self.m.addConstr(0 == 0)
 
             self.gamma_th = 1
             self.gamma_ph = 1
+            self.gamma_ps = 1
             
             self.ran_before = True
 
@@ -220,7 +226,20 @@ class CBFHelix(BlimpController):
 
         self.m.remove(self.ph_cbf_constraint)
         self.ph_cbf_constraint = self.m.addConstr(lfpsi1_ph + lgpsi1_ph @ self.mu >= -self.gamma_ph*psi1_ph, "ph_cbf")
+        
+        # psi
+        h_ps = 1/2 * (-psi**2 + self.psi_limit**2)
+        psi1_ps = - psi*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + self.gamma_ph * h_ps
 
+        lfpsi1_ps = (np.cos(phi)*psi*((w_x__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/I_z - (w_y__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/I_z - (v_y__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/I_z + (v_x__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/I_z + (D_omega_z__CB*w_z__b)/I_z))/np.cos(theta) - psi*((np.cos(phi)*w_y__b)/np.cos(theta) - (np.sin(phi)*w_z__b)/np.cos(theta))*(w_x__b + np.cos(phi)*np.tan(theta)*w_z__b + np.sin(phi)*np.tan(theta)*w_y__b) - psi*(np.cos(phi)*w_y__b - np.sin(phi)*w_z__b)*((np.cos(phi)*np.sin(theta)*w_z__b)/np.cos(theta)**2 + (np.sin(phi)*np.sin(theta)*w_y__b)/np.cos(theta)**2) - ((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta))*(self.gamma_ps*psi + (np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + (np.sin(phi)*psi*(w_z__b*((m_x*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - v_x__b*((D_vxy__CB*m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_x*m_z*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*((D_omega_xy__CB*m_x)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_RB*m_z*r_z_gb__b*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + (m_x*v_z__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (I_z*m_x*w_x__b*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (f_g*m_x*r_z_gb__b*np.sin(theta))/((I_y*m_x - m_RB**2*r_z_gb__b**2)*(np.cos(theta)**2 + np.sin(theta)**2))))/np.cos(theta)
+        lgpsi1_ps = np.array(
+            [(np.sin(phi)*psi*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), 0, 0, -(np.cos(phi)*psi)/(I_z*np.cos(theta))]
+        ).reshape((1,4))
+
+        self.m.remove(self.ps_cbf_constraint)
+        self.ps_cbf_constraint = self.m.addConstr(lfpsi1_ps + lgpsi1_ps @ self.mu >= -self.gamma_ps*psi1_ps, "ps_cbf")
+
+        # objective
         obj = (self.mu.T - k_x.T) @ (self.mu - k_x)
         self.m.setObjective(obj)
 
