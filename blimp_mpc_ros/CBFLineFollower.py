@@ -19,14 +19,17 @@ class CBFLineFollower(BlimpController):
         TRACKING_TIME = 20
         SETTLE_TIME = 100
 
-        self.theta_limit = 20 * np.pi/180
-        self.phi_limit = 20 * np.pi/180
+        self.theta_limit = 10 * np.pi/180
+        self.phi_limit = 10 * np.pi/180
         self.psi_limit = 10 * np.pi/180
         
         tracking_time = np.arange(0, TRACKING_TIME, self.dT)
         settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, self.dT)
 
         time_vec = np.concatenate((tracking_time, settle_time))
+        
+        self.k_x_list = []
+        self.u_delta_list = []
         
         m = 0.05
         
@@ -100,8 +103,8 @@ class CBFLineFollower(BlimpController):
             self.ph_cbf_constraint = self.m.addConstr(0 == 0)
             self.ps_cbf_constraint = self.m.addConstr(0 == 0)
 
-            self.gamma_th = 1
-            self.gamma_ph = 1
+            self.gamma_th = 0.2
+            self.gamma_ph = 0.2
             self.gamma_ps = 1
             
             self.ran_before = True
@@ -175,7 +178,7 @@ class CBFLineFollower(BlimpController):
         e2 = zeta2 - yd_dot
         
         k1 = np.array([1, 1, 10, 1]).reshape((4,1))
-        k2 = np.array([1, 1, 10, 1]).reshape((4,1))
+        k2 = np.array([1, 1, 10, 10]).reshape((4,1))
 
         q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
         
@@ -216,8 +219,8 @@ class CBFLineFollower(BlimpController):
             [(np.sin(phi)*psi*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), 0, 0, -(np.cos(phi)*psi)/(I_z*np.cos(theta))]
         ).reshape((1,4))
 
-        self.m.remove(self.ps_cbf_constraint)
-        self.ps_cbf_constraint = self.m.addConstr(lfpsi1_ps + lgpsi1_ps @ self.mu >= -self.gamma_ps*psi1_ps, "ps_cbf")
+        #self.m.remove(self.ps_cbf_constraint)
+        #self.ps_cbf_constraint = self.m.addConstr(lfpsi1_ps + lgpsi1_ps @ self.mu >= -self.gamma_ps*psi1_ps, "ps_cbf")
 
         # objective
         obj = (self.mu.T - k_x.T) @ (self.mu - k_x)
@@ -245,6 +248,11 @@ class CBFLineFollower(BlimpController):
             print()
 
         u = self.mu.X
+        
+        u_delta = u - k_x
+        
+        self.k_x_list.append(k_x)
+        self.u_delta_list.append(u_delta)
         
         psi1_dot = lfpsi1_th + lgpsi1_th @ u.reshape((4,1))
 

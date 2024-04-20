@@ -11,6 +11,7 @@ from . utilities import *
 from . BlimpLogger import BlimpLogger
 
 import time
+import csv
 
 class BlimpMPCNode(Node):
 
@@ -349,4 +350,13 @@ class BlimpMPCNode(Node):
         print("Logging data...")
         logger = BlimpLogger(self.logfile)
         logger.log(self.sim, self.controller)
+        
+        with open('logs/misc_' + self.logfile, 'w', newline='') as outfile:
+            writer = csv.writer(outfile)
+            
+            writer.writerow(['k_x', 'u_delta'])
+            
+            for i in range(len(self.controller.u_delta_list)):
+                writer.writerow([self.controller.k_x_list[i][0].item(), self.controller.u_delta_list[i][0].item()])
+        
         print("Logging done!")

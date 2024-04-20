@@ -150,7 +150,7 @@ class FeedbackLinLineFollower(BlimpController):
         e2 = zeta2 - yd_dot
         
         k1 = np.array([1, 1, 10, 1]).reshape((4,1))
-        k2 = np.array([1, 1, 10, 1]).reshape((4,1))
+        k2 = np.array([1, 1, 10, 10]).reshape((4,1))
 
         q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
         
