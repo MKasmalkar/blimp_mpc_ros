@@ -88,8 +88,8 @@ class CBFAngles(BlimpController):
 
             traj_z_bounds = 1
             
-            self.theta_limit = 20 * np.pi/180
-            self.phi_limit = 20 * np.pi/180
+            self.theta_limit = 10 * np.pi/180
+            self.phi_limit = 10 * np.pi/180
             
             traj_z_max = z0 + traj_z_bounds / 2
             traj_z_min = z0 - traj_z_bounds / 2
@@ -217,7 +217,7 @@ class CBFAngles(BlimpController):
         e2 = zeta2 - yd_dot
         
         k1 = np.array([1, 1, 10, 1]).reshape((4,1))
-        k2 = np.array([1, 1, 10, 1]).reshape((4,1))
+        k2 = np.array([1, 1, 10, 10]).reshape((4,1))
 
         q = -k1 * e1.reshape((4,1)) - k2 * e2.reshape((4,1)) + yd_ddot
         
@@ -233,8 +233,8 @@ class CBFAngles(BlimpController):
             [np.cos(phi)*theta*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)), 0, 0, (np.sin(phi)*theta)/I_z]
         ).reshape((1,4))
 
-        self.m.remove(self.th_cbf_constraint)
-        self.th_cbf_constraint = self.m.addConstr(lfpsi1_th + lgpsi1_th @ self.mu >= -self.gamma_th*psi1_th, "th_cbf")
+        #self.m.remove(self.th_cbf_constraint)
+        #self.th_cbf_constraint = self.m.addConstr(lfpsi1_th + lgpsi1_th @ self.mu >= -self.gamma_th*psi1_th, "th_cbf")
 
         h_ph = 1/2 * (-phi**2 + self.phi_limit**2)
         psi1_ph = - phi*(w_x__b + np.cos(phi)*np.tan(theta)*w_z__b + np.sin(phi)*np.tan(theta)*w_y__b) + self.gamma_ph * h_ph
@@ -244,8 +244,8 @@ class CBFAngles(BlimpController):
             [np.sin(phi)*np.tan(theta)*phi*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)), -phi*((m_RB*r_z_gb__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_y*r_z_tg__b)/(I_x*m_y - m_RB**2*r_z_gb__b**2)), 0, -(np.cos(phi)*np.tan(theta)*phi)/I_z]
         ).reshape((1,4))
 
-        self.m.remove(self.ph_cbf_constraint)
-        self.ph_cbf_constraint = self.m.addConstr(lfpsi1_ph + lgpsi1_ph @ self.mu >= -self.gamma_ph*psi1_ph, "ph_cbf")
+        #self.m.remove(self.ph_cbf_constraint)
+        #self.ph_cbf_constraint = self.m.addConstr(lfpsi1_ph + lgpsi1_ph @ self.mu >= -self.gamma_ph*psi1_ph, "ph_cbf")
 
         obj = (self.mu.T - k_x.T) @ (self.mu - k_x)
         self.m.setObjective(obj)

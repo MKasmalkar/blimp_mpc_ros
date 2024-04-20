@@ -40,14 +40,9 @@ class BlimpMPCNode(Node):
             1
         )
         
-        self.update_gyros_subscription = self.create_subscription(
-            Vector3,
-            f"agents/blimp{blimp_id}/gyros",
-            self.read_gyros,
-            1
-        )
-
         # Create controller and "simulator" variables
+        
+        self.mocap_read_times = []
 
         self.controller = controller
 
@@ -78,7 +73,7 @@ class BlimpMPCNode(Node):
 
         self.state_variables_valid = False
         
-        self.moving_average_history = 5
+        self.data_block_length = 5
 
     def read_velocities(self, msg):
         self.vel_last_message = msg
@@ -86,45 +81,10 @@ class BlimpMPCNode(Node):
     def read_angles(self, msg):
         self.angles_last_message = msg
 
-    def read_gyros(self, msg):
-        return
-        current_time = time.time()
-
-        self.gyro_k += 1
-
-        # Gyros give you wx, wy, wz
-        w_x = msg.x * 180/np.pi
-        w_y = msg.y * 180/np.pi
-        w_z = msg.z * 180/np.pi
-
-        # TODO: figure out if w_x, etc. are world or body frame
-
-        if self.d_ang_history is None:
-            self.d_ang_history = np.array([w_x, w_y, w_z]).reshape((3,1))
-        else:
-            self.d_ang_history = np.hstack((self.d_ang_history,
-                                              np.array([w_x, w_y, w_z]).reshape((3,1))))
-            
-        if self.last_gyro_timestamp == None:
-            self.last_gyro_timestamp = current_time
-            w_x_dot = 0
-            w_y_dot = 0
-            w_z_dot = 0
-            
-            self.d_avl_history = np.array([w_x_dot,
-                                                 w_y_dot,
-                                                 w_z_dot]).reshape((3,1))
-        else:
-            deltaT = current_time - self.last_gyro_timestamp
-            self.last_gyro_timestamp = current_time
-
-            ang_vel_dot = (np.array([w_x, w_y, w_z]) - self.d_ang_history[:, self.gyro_k-1]) / deltaT
-            self.d_avl_history = np.hstack((self.d_avl_history, ang_vel_dot.reshape((3,1))))
-
     def read_mocap(self, msg):
         blimp = msg.rigidbodies[0]
 
-        current_time = time.time()
+        self.mocap_read_times.append(msg.header.stamp.sec + msg.header.stamp.nanosec*1e-9)
 
         self.mocap_k += 1
 
@@ -189,9 +149,7 @@ class BlimpMPCNode(Node):
             current_ang_vector = np.array([phi_avg, theta_avg, psi_avg]).reshape((3,1))
             self.ang_history = np.hstack((self.ang_history, current_ang_vector))
 
-        if self.last_mocap_timestamp is None:
-            self.last_mocap_timestamp = current_time
-
+        if self.mocap_k == 0:
             self.vel_history = np.array([0, 0, 0]).reshape((3,1))
             self.avl_history = np.array([0, 0, 0]).reshape((3,1))
 
@@ -199,31 +157,46 @@ class BlimpMPCNode(Node):
             self.d_vel_history = np.array([0, 0, 0]).reshape((3,1))
             self.d_ang_history = np.array([0, 0, 0]).reshape((3,1))
             self.d_avl_history = np.array([0, 0, 0]).reshape((3,1))
-            
+        elif self.mocap_k < self.data_block_length:
+            self.vel_history = np.hstack((self.vel_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
+            self.avl_history = np.hstack((self.avl_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
+            self.d_pos_history = np.hstack((self.d_pos_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
+            self.d_vel_history = np.hstack((self.d_vel_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
+            self.d_ang_history = np.hstack((self.d_ang_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
+            self.d_avl_history = np.hstack((self.d_avl_history,
+                                          np.array([0, 0, 0]).reshape((3,1))))
         else:
-            deltaT = current_time - self.last_mocap_timestamp
-            self.last_mocap_timestamp = current_time
+            deltaT = self.mocap_read_times[-1] - self.mocap_read_times[-1-self.data_block_length]
             
             x_dot_raw = (self.pos_history[0][self.mocap_k]
-                    - self.pos_history[0][self.mocap_k-1]) / deltaT
+                    - self.pos_history[0][self.mocap_k-self.data_block_length]) / deltaT
             y_dot_raw = (self.pos_history[1][self.mocap_k]
-                    - self.pos_history[1][self.mocap_k-1]) / deltaT
+                    - self.pos_history[1][self.mocap_k-self.data_block_length]) / deltaT
             z_dot_raw = (self.pos_history[2][self.mocap_k]
-                    - self.pos_history[2][self.mocap_k-1]) / deltaT
-           
+                    - self.pos_history[2][self.mocap_k-self.data_block_length]) / deltaT
+            
             filter_coeffs = np.array([0.1, 0.15, 0.15, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
-            
-            x_dot = filter_coeffs[0] * x_dot_raw
-            y_dot = filter_coeffs[0] * y_dot_raw
-            z_dot = filter_coeffs[0] * z_dot_raw
-            
-            for i in range(1, len(filter_coeffs)):
-                if i > self.d_pos_history.shape[1]:
-                    break
-            
-                x_dot += filter_coeffs[i] * self.d_pos_history[0, -i]
-                y_dot += filter_coeffs[i] * self.d_pos_history[1, -i]
-                z_dot += filter_coeffs[i] * self.d_pos_history[2, -i]
+            if deltaT > 0.1:
+                x_dot = filter_coeffs[0] * x_dot_raw
+                y_dot = filter_coeffs[0] * y_dot_raw
+                z_dot = filter_coeffs[0] * z_dot_raw
+                
+                for i in range(1, len(filter_coeffs)):
+                    if i > self.d_pos_history.shape[1]:
+                        break
+                
+                    x_dot += filter_coeffs[i] * self.d_pos_history[0, -i]
+                    y_dot += filter_coeffs[i] * self.d_pos_history[1, -i]
+                    z_dot += filter_coeffs[i] * self.d_pos_history[2, -i]
+            else:
+                x_dot = x_dot_raw
+                y_dot = y_dot_raw
+                z_dot = z_dot_raw
 
             pos_dot = np.array([x_dot, y_dot, z_dot]).T
             
@@ -238,24 +211,30 @@ class BlimpMPCNode(Node):
            
 
             phi_dot_raw = (self.ang_history[0][self.mocap_k]
-                       - self.ang_history[0][self.mocap_k-1]) / deltaT
+                       - self.ang_history[0][self.mocap_k-self.data_block_length]) / deltaT
             theta_dot_raw = (self.ang_history[1][self.mocap_k]
-                       - self.ang_history[1][self.mocap_k-1]) / deltaT
+                       - self.ang_history[1][self.mocap_k-self.data_block_length]) / deltaT
             psi_dot_raw = (self.ang_history[2][self.mocap_k]
-                       - self.ang_history[2][self.mocap_k-1]) / deltaT
+                       - self.ang_history[2][self.mocap_k-self.data_block_length]) / deltaT
             
-            phi_dot = filter_coeffs[0] * phi_dot_raw
-            theta_dot = filter_coeffs[0] * theta_dot_raw
-            psi_dot = filter_coeffs[0] * psi_dot_raw
+            if deltaT > 0.1:
+                phi_dot = filter_coeffs[0] * phi_dot_raw
+                theta_dot = filter_coeffs[0] * theta_dot_raw
+                psi_dot = filter_coeffs[0] * psi_dot_raw
 
-            for i in range(1, len(filter_coeffs)):
-                if i > self.d_ang_history.shape[1]:
-                    break
-            
-                phi_dot += filter_coeffs[i] * self.d_ang_history[0, -i]
-                theta_dot += filter_coeffs[i] * self.d_ang_history[1, -i]
-                psi_dot += filter_coeffs[i] * self.d_ang_history[2, -i]
+                for i in range(1, len(filter_coeffs)):
+                    if i > self.d_ang_history.shape[1]:
+                        break
                 
+                    phi_dot += filter_coeffs[i] * self.d_ang_history[0, -i]
+                    theta_dot += filter_coeffs[i] * self.d_ang_history[1, -i]
+                    psi_dot += filter_coeffs[i] * self.d_ang_history[2, -i]
+
+            else:                
+                phi_dot = phi_dot_raw
+                theta_dot = theta_dot_raw
+                psi_dot = psi_dot_raw
+                    
             ang_dot = np.array([phi_dot, theta_dot, psi_dot]).T
             
             self.d_ang_history = np.hstack((self.d_ang_history,
@@ -354,9 +333,12 @@ class BlimpMPCNode(Node):
         with open('logs/misc_' + self.logfile, 'w', newline='') as outfile:
             writer = csv.writer(outfile)
             
-            writer.writerow(['k_x', 'u_delta'])
+            writer.writerow(['msg time', 'msg_dt'])
             
-            for i in range(len(self.controller.u_delta_list)):
-                writer.writerow([self.controller.k_x_list[i][0].item(), self.controller.u_delta_list[i][0].item()])
+            msg_dt = np.concatenate((np.zeros(1),
+                    [self.mocap_read_times[i] - self.mocap_read_times[i-1] for i in range(1, len(self.mocap_read_times))]))
+            
+            for i in range(len(self.mocap_read_times)):
+                writer.writerow([self.mocap_read_times[i], msg_dt[i]])
         
         print("Logging done!")

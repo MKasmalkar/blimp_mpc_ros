@@ -4,6 +4,7 @@ from . FeedbackLinLineFollower import FeedbackLinLineFollower
 from . TrackingNoDamping import TrackingNoDamping
 from . SingleActionDrive import SingleActionDrive
 from . CBFHelix import CBFHelix
+from . CBFLineFollower import CBFLineFollower
 from . MPCHelix import MPCHelix
 from . BlimpPlotter import BlimpPlotter
 from . BlimpLogger import BlimpLogger
@@ -31,7 +32,7 @@ def main(args=None):
         WINDOW_TITLE = 'Nonlinear'
 
         Simulator = NonlinearBlimpSim
-        Controller = CBFHelix
+        Controller = CBFLineFollower
         
         print("Running blimp simulator")
         

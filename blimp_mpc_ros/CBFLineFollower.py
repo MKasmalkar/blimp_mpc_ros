@@ -21,7 +21,7 @@ class CBFLineFollower(BlimpController):
 
         self.theta_limit = 10 * np.pi/180
         self.phi_limit = 10 * np.pi/180
-        self.psi_limit = 10 * np.pi/180
+        self.psi_limit = 5 * np.pi/180
         
         tracking_time = np.arange(0, TRACKING_TIME, self.dT)
         settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, self.dT)
@@ -103,8 +103,8 @@ class CBFLineFollower(BlimpController):
             self.ph_cbf_constraint = self.m.addConstr(0 == 0)
             self.ps_cbf_constraint = self.m.addConstr(0 == 0)
 
-            self.gamma_th = 0.2
-            self.gamma_ph = 0.2
+            self.gamma_th = 1
+            self.gamma_ph = 1
             self.gamma_ps = 1
             
             self.ran_before = True

@@ -17,8 +17,6 @@ class SingleActionDrive(BlimpController):
         self.z_initial = np.NaN
         self.yaw_initial = np.NaN
 
-        self.ctr = 0
-
     def init_sim(self, sim):
         pass
 
@@ -36,13 +34,7 @@ class SingleActionDrive(BlimpController):
         z = sim.get_var('z')
         z_action = self.z_pid.get_ctrl(self.z_initial - z)
 
-        self.ctr += 0.00001
-        print(self.ctr)
-        
-        if self.ctr > 0.06:
-            self.ctr = 0.06
-
-        return np.array([self.ctr, 0.0, 0.0, 0.0])
+        return np.array([0, 0.0, 0.0, 0.0])
     
     def get_error(self, sim):
         n = sim.get_current_timestep() + 1
