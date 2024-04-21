@@ -10,7 +10,7 @@ from . Trajectories import Trajectories
 import math
 import sys
 
-class CtrlPIDTriangle(BlimpController):
+class CtrlPIDTriangle(CtrlPID):
 
     def __init__(self, dT, skip_derivatives=True):
         super().__init__(dT)

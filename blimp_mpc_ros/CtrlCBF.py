@@ -18,8 +18,8 @@ class CtrlCBF(BlimpController):
         
         self.use_psi_cbf = True
         
-        self.k1 = np.array([0.5, 0.5, 5, 0.6]).reshape((4,1))
-        self.k2 = np.array([0.5, 0.5, 5, 0.6]).reshape((4,1))
+        self.k1 = np.array([0.4, 0.4, 5, 0.4]).reshape((4,1))
+        self.k2 = np.array([0.2, 0.2, 5, 0.4]).reshape((4,1))
 
         self.gamma_th = 1
         self.gamma_ph = 1
@@ -144,12 +144,12 @@ class CtrlCBF(BlimpController):
         if self.use_psi_cbf:
             psi_0 = self.traj_psi[n]
 
-            h_ps = 1/2 * (-(psi - psi0)**2 + self.psi_limit**2)
-            psi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + self.gamma*(-(psi_0 - psi)**2/2 + self.psi_limit**2/2)
+            h_ps = 1/2 * (-(psi - psi_0)**2 + self.psi_limit**2)
+            psi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + self.gamma_ps*(-(psi_0 - psi)**2/2 + self.psi_limit**2/2)
 
-            lfpsi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) - self.gamma*((psi_0 - psi)**2/2 - self.psi_limit**2/2)
+            lfpsi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) - self.gamma_ps*((psi_0 - psi)**2/2 - self.psi_limit**2/2)
             lgpsi1_ps = np.array(
-                [-(np.sin(phi)*(psi_0 - psi)*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), sym(0), sym(0), (np.cos(phi)*(psi_0 - psi))/(I_z*np.cos(theta))]
+                [-(np.sin(phi)*(psi_0 - psi)*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), (0), (0), (np.cos(phi)*(psi_0 - psi))/(I_z*np.cos(theta))]
             ).reshape((1,4))
 
             self.m.remove(self.ps_cbf_constraint)

@@ -6,6 +6,7 @@ import control
 from . parameters import *
 from . PID import PID
 from . CtrlPID import CtrlPID
+from . Trajectories import Trajectories
 import math
 import sys
 
