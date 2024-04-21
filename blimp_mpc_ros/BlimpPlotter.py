@@ -32,8 +32,8 @@ class BlimpPlotter():
             self.ax_vel = self.fig.add_subplot(gs[1, 0])
             self.ax_ang = self.fig.add_subplot(gs[0, 1])
             self.ax_w = self.fig.add_subplot(gs[1, 1])
-            self.ax_err_pos = self.fig.add_subplot(gs[2, 0])
-            self.ax_err_ang = self.fig.add_subplot(gs[2, 1])
+            self.ax_traj = self.fig.add_subplot(gs[2, 0])
+            self.ax_psi = self.fig.add_subplot(gs[2, 1])
             self.ax_force = self.fig.add_subplot(gs[0, 2])
             self.ax_solve = self.fig.add_subplot(gs[1, 2])
 
@@ -48,7 +48,7 @@ class BlimpPlotter():
         self.plotting = True
         self.window_closed = False
 
-    def update_plot(self, sim, ctrl):
+    def update_plot(self, sim):
         
         if not self.plotting: return
     
@@ -66,17 +66,30 @@ class BlimpPlotter():
                            s=200)
         # self.ax_3d.set_zlim([-2, 2])
     
-        traj = ctrl.get_trajectory()
+        traj = sim.trajectory
         
-        if traj != None:
-            traj_x = traj[0]
-            traj_y = traj[1]
-            traj_z = traj[2]
+        self.ax_traj.cla()
+
+        if traj is not None:
+            traj_x = traj[:, 0]
+            traj_y = traj[:, 1]
+            traj_z = traj[:, 2]
+            traj_psi = traj[:, 3]
             self.ax_3d.scatter(traj_x,
                                traj_y,
                                traj_z,
                                color='g')
+                               
+            self.ax_traj.plot(sim.get_time_vec(), traj_x)
+            self.ax_traj.plot(sim.get_time_vec(), traj_y)
+            self.ax_traj.plot(sim.get_time_vec(), traj_z)
     
+        self.ax_traj.legend(['x', 'y', 'z'])
+        self.ax_traj.set_ylabel('m')
+        self.ax_traj.set_xlabel('Time (sec)')
+        self.ax_traj.set_title('Nominal trajectory')
+        
+        
         self.ax_3d.invert_yaxis()
         self.ax_3d.invert_zaxis()
         self.ax_3d.set_xlabel('x')
@@ -131,6 +144,12 @@ class BlimpPlotter():
             self.ax_vel.set_ylabel('m/s')
             self.ax_vel.set_xlabel('Time (sec)')
             self.ax_vel.set_title('Velocity')
+           
+            self.ax_psi.plot(sim.get_time_vec(), sim.get_var_history('psi') * 180/np.pi)
+            self.ax_psi.legend(['psi'])
+            self.ax_psi.set_ylabel('deg')
+            self.ax_psi.set_xlabel('Time (sec)')
+            self.ax_psi.set_title('Psi')
 
             self.ax_ang.cla()
             self.ax_ang.plot(sim.get_time_vec(), sim.get_var_history('phi') * 180/np.pi)
@@ -150,32 +169,6 @@ class BlimpPlotter():
             self.ax_w.set_ylabel('deg/s')
             self.ax_w.set_xlabel('Time (sec)')
             self.ax_w.set_title('Angular Velocity')
-
-            self.ax_err_pos.cla()
-            self.ax_err_ang.cla()
-
-            error = ctrl.get_error(sim)
-            if error is not None:
-                error_x = error[:, 0]
-                error_y = error[:, 1]
-                error_z = error[:, 2]
-                error_psi = error[:, 3]
-
-                self.ax_err_pos.plot(sim.get_time_vec(), error_x)
-                self.ax_err_pos.plot(sim.get_time_vec(), error_y)
-                self.ax_err_pos.plot(sim.get_time_vec(), error_z)
-
-                self.ax_err_ang.plot(sim.get_time_vec(), error_psi * 180/np.pi)
-
-            self.ax_err_pos.legend(['x', 'y', 'z'])
-            self.ax_err_pos.set_ylabel('m')
-            self.ax_err_pos.set_xlabel('Time (sec)')
-            self.ax_err_pos.set_title('Position error')
-            
-            self.ax_err_ang.legend(['psi'])
-            self.ax_err_ang.set_ylabel('deg')
-            self.ax_err_ang.set_xlabel('Time (sec)')
-            self.ax_err_ang.set_title('Angle error')
 
             self.ax_force.cla()
             self.ax_force.plot(sim.get_time_vec(), sim.get_u_history('fx'))

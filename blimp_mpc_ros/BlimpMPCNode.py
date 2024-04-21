@@ -4,11 +4,12 @@ from geometry_msgs.msg import Quaternion, Vector3
 from mocap4r2_msgs.msg import RigidBodies
 import numpy as np
 
-from . NonlinearBlimpSim import NonlinearBlimpSim
-from . operators import *
 from . utilities import *
 
+from . BlimpSim import BlimpSim
 from . BlimpLogger import BlimpLogger
+
+import sys
 
 import time
 import csv
@@ -49,8 +50,7 @@ class BlimpMPCNode(Node):
         # The "simulator" is just a dummy object that passes along data from
         # the actual blimp. The blimp controller classes require a "simulator"
         # to exist, from which they read the state data.
-        self.sim = NonlinearBlimpSim(self.dT)
-        self.controller.init_sim(self.sim)
+        self.sim = BlimpSim(self.dT)
 
         # Used for computing derivatives
         self.pos_history = None    # [x, y, z]
@@ -300,7 +300,14 @@ class BlimpMPCNode(Node):
         self.sim.set_var_dot('wy', self.d_avl_history[1][self.gyro_k])
         self.sim.set_var_dot('wz', self.d_avl_history[2][self.gyro_k])
         
-        ctrl = self.controller.get_ctrl_action(self.sim, )
+        if not self.controller.is_initialized:
+            self.controller.init_sim(self.sim)
+        
+        ctrl = self.controller.get_ctrl_action(self.sim)
+        if ctrl is None:
+            self.write_command(0.0, 0.0, 0.0, 0.0)
+            sys.exit(0)
+            
         fx = ctrl[0].item()
         fy = ctrl[1].item()
         fz = ctrl[2].item()
@@ -329,16 +336,4 @@ class BlimpMPCNode(Node):
         print("Logging data...")
         logger = BlimpLogger(self.logfile)
         logger.log(self.sim, self.controller)
-        
-        with open('logs/misc_' + self.logfile, 'w', newline='') as outfile:
-            writer = csv.writer(outfile)
-            
-            writer.writerow(['msg time', 'msg_dt'])
-            
-            msg_dt = np.concatenate((np.zeros(1),
-                    [self.mocap_read_times[i] - self.mocap_read_times[i-1] for i in range(1, len(self.mocap_read_times))]))
-            
-            for i in range(len(self.mocap_read_times)):
-                writer.writerow([self.mocap_read_times[i], msg_dt[i]])
-        
         print("Logging done!")
