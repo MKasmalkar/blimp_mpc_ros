@@ -13,7 +13,7 @@ class CtrlPID(BlimpController):
     def __init__(self, dT):
         super().__init__(dT)
         
-        kp_xy = 0.05
+        kp_xy = 0.035
         ki_xy = 0.01
         kd_xy = 0.1
         

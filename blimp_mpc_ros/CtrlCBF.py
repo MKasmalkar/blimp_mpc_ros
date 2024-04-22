@@ -18,7 +18,7 @@ class CtrlCBF(BlimpController):
         
         self.use_psi_cbf = True
         
-        self.k1 = np.array([0.4, 0.4, 5, 0.4]).reshape((4,1))
+        self.k1 = np.array([0.25, 0.25, 5, 0.4]).reshape((4,1))
         self.k2 = np.array([0.2, 0.2, 5, 0.4]).reshape((4,1))
 
         self.gamma_th = 1
