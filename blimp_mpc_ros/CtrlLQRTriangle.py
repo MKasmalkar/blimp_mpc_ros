@@ -1,23 +1,19 @@
+from . BlimpController import BlimpController
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-import time
-from . CtrlFbl import CtrlFbl
-from . Trajectories import Trajectories
+import control
 from . parameters import *
+from . CtrlLQR import CtrlLQR
+from . Trajectories import Trajectories
+import math
 import sys
 
-class CtrlFblTriangle(CtrlFbl):
+class CtrlLQRTriangle(CtrlLQR):
 
-    def __init__(self, dT):
+    def __init__(self, dT, skip_derivatives=True):
         super().__init__(dT)
-        
-        self.metadata = np.array([
-            f"k1 = {self.k1.T}",
-            f"k2 = {self.k2.T}",
-            f"dT = {dT}"
-        ])
-    
+
     def init_sim(self, sim):
         
         x0 = sim.get_var('x')

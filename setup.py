@@ -26,9 +26,9 @@ setup(
             'run_fbl_line       = blimp_mpc_ros.run_ctrl_fbl_line:main',
             'run_fbl_triangle   = blimp_mpc_ros.run_ctrl_fbl_triangle:main',
             'run_fbl_helix      = blimp_mpc_ros.run_ctrl_fbl_helix:main',
-            'run_pid_line       = blimp_mpc_ros.run_ctrl_pid_line:main',
-            'run_pid_triangle   = blimp_mpc_ros.run_ctrl_pid_triangle:main',
-            'run_pid_helix      = blimp_mpc_ros.run_ctrl_pid_helix:main',
+            'run_lqr_line       = blimp_mpc_ros.run_ctrl_lqr_line:main',
+            'run_lqr_triangle   = blimp_mpc_ros.run_ctrl_lqr_triangle:main',
+            'run_lqr_helix      = blimp_mpc_ros.run_ctrl_lqr_helix:main',
             'run_blimp_sim = blimp_mpc_ros.run_blimp_sim:main',
             'run_blimp_data = blimp_mpc_ros.run_blimp_data:main'
         ],

@@ -1,12 +1,12 @@
 import rclpy
 
-from . CtrlPIDLine import CtrlPIDLine
+from . CtrlLQRHelix import CtrlLQRHelix
 from . BlimpMPCNode import BlimpMPCNode
 
 import sys
 
 def main(args=sys.argv):
-    print('Algorithm: PID; trajectory: line')
+    print('Algorithm: LQR; trajectory: helix')
 
     if len(args) < 2:
         print("Please run with log file name as argument.")
@@ -16,7 +16,7 @@ def main(args=sys.argv):
         rclpy.init(args=args)
 
         dT = 0.05
-        controller = CtrlPIDLine(dT)
+        controller = CtrlLQRHelix(dT)
         node = BlimpMPCNode(controller, args[1])
         
         rclpy.spin(node)
