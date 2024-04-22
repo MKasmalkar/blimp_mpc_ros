@@ -18,11 +18,11 @@ class CtrlCBF(BlimpController):
         
         self.use_psi_cbf = True
         
-        self.k1 = np.array([0.25, 0.25, 5, 0.4]).reshape((4,1))
-        self.k2 = np.array([0.2, 0.2, 5, 0.4]).reshape((4,1))
+        self.k1 = np.array([1.1, 1.1, 5, 0.4]).reshape((4,1))
+        self.k2 = np.array([0.5, 0.5, 5, 0.4]).reshape((4,1))
 
-        self.gamma_th = 1
-        self.gamma_ph = 1
+        self.gamma_th = 0.1
+        self.gamma_ph = 0.1
         self.gamma_ps = 1
         
         self.env = gp.Env(empty=True)

@@ -2,31 +2,21 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import time
-from . BlimpController import BlimpController
-from . CtrlCBF import CtrlCBF
+from . CtrlFbl import CtrlFbl
 from . Trajectories import Trajectories
 from . parameters import *
-import matplotlib.pyplot as plt
 import sys
 
-class CtrlCBFTriangle(CtrlCBF):
+class CtrlFblTriangle(CtrlFbl):
 
     def __init__(self, dT):
         super().__init__(dT)
-
+        
         self.metadata = np.array([
-            f"gamma_th = {self.gamma_th}",
-            f"gamma_ph = {self.gamma_ph}",
-            f"gamma_psi = {self.gamma_ps}",
             f"k1 = {self.k1.T}",
             f"k2 = {self.k2.T}",
-            f"theta_limit = {self.theta_limit}",
-            f"phi_limit = {self.phi_limit}",
-            f"psi_limit = {self.psi_limit}",
-            f"psi cbf = {self.use_psi_cbf}",
             f"dT = {dT}"
         ])
-        
     
     def init_sim(self, sim):
         

@@ -36,6 +36,7 @@ class BlimpLogger:
             trajectory_full = ctrl.get_trajectory()
             trajectory = trajectory_full[0:state_history.shape[0]]
             
+            # the indices here are incorrect but no need to fix it
             error = trajectory - state_history[:, 0:4]
             solve_times = sim.get_solve_time_history().reshape((n, 1))
             

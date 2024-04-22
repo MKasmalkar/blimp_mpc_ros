@@ -39,12 +39,12 @@ def main(args=sys.argv):
         
     try:
         dT = 0.001
-        ctrl_dT = 0.05
+        ctrl_dT = 0.001
         ctrl_period = int(ctrl_dT / dT)
         
         ctrl_ctr = 0
         
-        STOP_TIME = 20
+        STOP_TIME = 60
         PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 
@@ -64,17 +64,17 @@ def main(args=sys.argv):
                 waveforms=PLOT_WAVEFORMS,
                 disable_plotting=(not PLOT_ANYTHING))
 
-        ctrl = Controller(dT)
+        ctrl = Controller(ctrl_dT)
         ctrl.init_sim(sim)
         
-        u = ctrl.get_ctrl_action(sim)        
+        u = ctrl.get_ctrl_action(sim)  
         for n in range(int(STOP_TIME / dT)):
             print("Time: " + str(round(n*dT, 2))) 
             sim.update_model(u)
             
             ctrl_ctr += 1
             if ctrl_ctr > ctrl_period:
-                u = ctrl.get_ctrl_action(sim)        
+                u = ctrl.get_ctrl_action(sim)
                 ctrl_ctr = 0
             
             print(f"Current state: {round(sim.get_var('x'), 6)}, {round(sim.get_var('y'), 6)}, {round(sim.get_var('z'), 6)}, {round(sim.get_var('psi'), 6)}")

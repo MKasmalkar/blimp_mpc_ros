@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import csv
 
 class Trajectories:
     
@@ -70,42 +72,82 @@ class Trajectories:
         
     def get_triangle(x0, y0, z0, psi0, dT):
         # Trajectory definition
-        TRACKING_TIME = 60
+        TRACKING_TIME = 180
 
-        x_speed = 0.025
-        y_speed = 0.025
-        z_speed = 0.02
-        traj_z_pkpk = 0.5
+        x_distance = 0.5
+        y_distance = 0.5
+        z_distance = -0.5
 
-        time_vec = np.arange(0, TRACKING_TIME + 1/dT, dT)
-        
-        traj_z_max = z0 + traj_z_pkpk / 2
-        traj_z_min = z0 - traj_z_pkpk / 2
-        
-        traj_x = x0 + x_speed*time_vec
-        traj_y = y0 + y_speed*time_vec
-        traj_psi = psi0 * np.ones(len(time_vec))
-        
-        traj_x_dot = x_speed * np.ones(len(time_vec))
-        traj_y_dot = y_speed * np.ones(len(time_vec))
-        traj_psi_dot = np.zeros(len(time_vec))
-        
+        time_vec = np.arange(0, TRACKING_TIME, dT)
+
+        traj_x = np.empty(len(time_vec))
+        traj_y = np.empty(len(time_vec))
         traj_z = np.empty(len(time_vec))
+        
+        traj_x_dot = np.empty(len(time_vec))
+        traj_y_dot = np.empty(len(time_vec))
         traj_z_dot = np.empty(len(time_vec))
         
-        z_ctr = z0
-        direction = -1
-        for i in range(len(time_vec)):
-            if direction == 1 and z_ctr > traj_z_max:
-                direction = -1
-            elif direction == -1 and z_ctr < traj_z_min:
-                direction = 1
+        traj_psi = psi0 * np.ones(len(time_vec))
+        traj_psi_dot = np.zeros(len(time_vec))
+        
+        for i in range(0, int(len(time_vec)/4)):
+            traj_x[i] = x0 + (x_distance) / (TRACKING_TIME/4) * time_vec[i]
+            traj_y[i] = y0
             
-            traj_z[i]     = z_ctr    
-            traj_z_dot[i] = direction * z_speed
+            traj_x_dot[i] = (x_distance) / (TRACKING_TIME/4)
+            traj_y_dot[i] = 0
             
-            z_ctr = z_ctr + direction * z_speed * dT
+            if i < len(time_vec)/8:
+                traj_z[i] = z0 + (z_distance) / (TRACKING_TIME/8) * time_vec[i]
+                traj_z_dot[i] = (z_distance) / (TRACKING_TIME/8)
+            else:
+                traj_z[i] = z0 + z_distance - (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)/8)])
+                traj_z_dot[i] = -(z_distance) / (TRACKING_TIME/8)
             
+            
+        for i in range(int(len(time_vec)/4) , int(len(time_vec)/2)):
+            traj_x[i] = x0 + x_distance
+            traj_y[i] = y0 + (y_distance) / (TRACKING_TIME/4) * (time_vec[i] - time_vec[int(len(time_vec)/4)])
+            
+            traj_x_dot[i] = 0
+            traj_y_dot[i] = (y_distance) / (TRACKING_TIME/4)
+            
+            if i < len(time_vec)*3/8:
+                traj_z[i] = z0 + (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)/4)])
+                traj_z_dot[i] = (z_distance) / (TRACKING_TIME/8)
+            else:
+                traj_z[i] = z0 + z_distance - (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)*3/8)])
+                traj_z_dot[i] = -(z_distance) / (TRACKING_TIME/8)
+            
+        for i in range(int(len(time_vec)/2), int(len(time_vec)*3/4)):
+            traj_x[i] = x0 + x_distance - (x_distance) / (TRACKING_TIME/4) * (time_vec[i] - time_vec[int(len(time_vec)/2)])
+            traj_y[i] = y0 + y_distance
+            
+            traj_x_dot[i] = - (x_distance) / (TRACKING_TIME/4)
+            traj_y_dot[i] = 0
+            
+            if i < len(time_vec)*5/8:
+                traj_z[i] = z0 + (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)/2)])
+                traj_z_dot[i] = (z_distance) / (TRACKING_TIME/8)
+            else:
+                traj_z[i] = z0 + z_distance - (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)*5/8)])
+                traj_z_dot[i] = -(z_distance) / (TRACKING_TIME/8)
+                
+        for i in range(int(len(time_vec)*3/4), int(len(time_vec))):
+            traj_x[i] = x0
+            traj_y[i] = y0 + y_distance - (y_distance) / (TRACKING_TIME/4) * (time_vec[i] - time_vec[int(len(time_vec)*3/4)])
+            
+            traj_x_dot[i] = 0
+            traj_y_dot[i] = -(y_distance) / (TRACKING_TIME/4)
+            
+            if i < len(time_vec)*7/8:
+                traj_z[i] = z0 + (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)*3/4)])
+                traj_z_dot[i] = (z_distance) / (TRACKING_TIME/8)
+            else:
+                traj_z[i] = z0 + z_distance - (z_distance) / (TRACKING_TIME/8) * (time_vec[i] - time_vec[int(len(time_vec)*7/8)])
+                traj_z_dot[i] = -(z_distance) / (TRACKING_TIME/8)
+        
         traj_x_ddot = np.zeros(len(time_vec))
         traj_y_ddot = np.zeros(len(time_vec))
         traj_z_ddot = np.zeros(len(time_vec))

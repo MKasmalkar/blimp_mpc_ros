@@ -6,7 +6,6 @@ from . BlimpController import BlimpController
 from . CtrlCBF import CtrlCBF
 from . Trajectories import Trajectories
 from . parameters import *
-import matplotlib.pyplot as plt
 import sys
 
 class CtrlCBFTriangle(CtrlCBF):
