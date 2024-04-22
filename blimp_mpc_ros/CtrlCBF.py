@@ -142,12 +142,14 @@ class CtrlCBF(BlimpController):
         
         # psi
         if self.use_psi_cbf:
-            h_ps = 1/2 * (-psi**2 + self.psi_limit**2)
-            psi1_ps = - psi*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + self.gamma_ph * h_ps
+            psi_0 = self.traj_psi[n]
 
-            lfpsi1_ps = (np.cos(phi)*psi*((w_x__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/I_z - (w_y__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/I_z - (v_y__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/I_z + (v_x__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/I_z + (D_omega_z__CB*w_z__b)/I_z))/np.cos(theta) - psi*((np.cos(phi)*w_y__b)/np.cos(theta) - (np.sin(phi)*w_z__b)/np.cos(theta))*(w_x__b + np.cos(phi)*np.tan(theta)*w_z__b + np.sin(phi)*np.tan(theta)*w_y__b) - psi*(np.cos(phi)*w_y__b - np.sin(phi)*w_z__b)*((np.cos(phi)*np.sin(theta)*w_z__b)/np.cos(theta)**2 + (np.sin(phi)*np.sin(theta)*w_y__b)/np.cos(theta)**2) - ((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta))*(self.gamma_ps*psi + (np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + (np.sin(phi)*psi*(w_z__b*((m_x*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - v_x__b*((D_vxy__CB*m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_x*m_z*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*((D_omega_xy__CB*m_x)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_RB*m_z*r_z_gb__b*v_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + (m_x*v_z__b*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (I_z*m_x*w_x__b*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (f_g*m_x*r_z_gb__b*np.sin(theta))/((I_y*m_x - m_RB**2*r_z_gb__b**2)*(np.cos(theta)**2 + np.sin(theta)**2))))/np.cos(theta)
+            h_ps = 1/2 * (-(psi - psi0)**2 + self.psi_limit**2)
+            psi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) + self.gamma*(-(psi_0 - psi)**2/2 + self.psi_limit**2/2)
+
+            lfpsi1_ps = (psi_0 - psi)*((np.cos(phi)*w_z__b)/np.cos(theta) + (np.sin(phi)*w_y__b)/np.cos(theta)) - self.gamma*((psi_0 - psi)**2/2 - self.psi_limit**2/2)
             lgpsi1_ps = np.array(
-                [(np.sin(phi)*psi*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), 0, 0, -(np.cos(phi)*psi)/(I_z*np.cos(theta))]
+                [-(np.sin(phi)*(psi_0 - psi)*((m_RB*r_z_gb__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2) - (m_x*r_z_tg__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)))/np.cos(theta), sym(0), sym(0), (np.cos(phi)*(psi_0 - psi))/(I_z*np.cos(theta))]
             ).reshape((1,4))
 
             self.m.remove(self.ps_cbf_constraint)
