@@ -6,14 +6,6 @@ from . CtrlCBFLine import CtrlCBFLine
 from . CtrlCBFTriangle import CtrlCBFTriangle
 from . CtrlCBFHelix import CtrlCBFHelix
 
-from . CtrlFBLLine import CtrlFBLLine
-from . CtrlFBLTriangle import CtrlFBLTriangle
-from . CtrlFBLHelix import CtrlFBLHelix
-
-from . CtrlLQRLine import CtrlLQRLine
-from . CtrlLQRTriangle import CtrlLQRTriangle
-from . CtrlLQRHelix import CtrlLQRHelix
-
 import numpy as np
 import sys
 import time
@@ -30,18 +22,12 @@ def main(args=sys.argv):
     mapping = {
         'cbf_line': CtrlCBFLine,
         'cbf_triangle': CtrlCBFTriangle,
-        'cbf_helix': CtrlCBFHelix,
-        'fbl_line': CtrlFBLLine,
-        'fbl_triange': CtrlFBLTriangle,
-        'fbl_helix': CtrlFBLHelix,
-        'lqr_line': CtrlLQRLine,
-        'lqr_triangle': CtrlLQRTriangle,
-        'lqr_helix': CtrlLQRHelix
+        'cbf_helix': CtrlCBFHelix
     }
         
     try:
-        dT = 0.01
-        ctrl_dT = 0.01
+        dT = 0.001
+        ctrl_dT = 0.001
         ctrl_period = int(ctrl_dT / dT)
         
         ctrl_ctr = 0

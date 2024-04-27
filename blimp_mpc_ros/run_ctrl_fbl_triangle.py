@@ -1,12 +1,12 @@
 import rclpy
 
-from . CtrlCBFLine import CtrlCBFLine
+from . CtrlFBLTriangle import CtrlFBLTriangle
 from . BlimpMPCNode import BlimpMPCNode
 
 import sys
 
 def main(args=sys.argv):
-    print('Algorithm: feedback linearization with CBFS; trajectory: line')
+    print('Algorithm: feedback linearization without CBFs; trajectory: triangle')
 
     if len(args) < 2:
         print("Please run with log file name as argument.")
@@ -16,7 +16,7 @@ def main(args=sys.argv):
         rclpy.init(args=args)
 
         dT = 0.01
-        controller = CtrlCBFLine(dT)
+        controller = CtrlFBLTriangle(dT)
         node = BlimpMPCNode(controller, args[1])
         
         rclpy.spin(node)

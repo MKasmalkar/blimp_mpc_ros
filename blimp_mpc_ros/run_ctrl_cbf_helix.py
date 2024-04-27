@@ -15,7 +15,7 @@ def main(args=sys.argv):
     try:
         rclpy.init(args=args)
 
-        dT = 0.05
+        dT = 0.01
         controller = CtrlCBFHelix(dT)
         node = BlimpMPCNode(controller, args[1])
         
