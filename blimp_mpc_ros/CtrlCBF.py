@@ -12,14 +12,14 @@ class CtrlCBF(BlimpController):
         super().__init__(dT)
         
         # Override in subclasses according to trajectory
-        self.theta_limit = 5 * np.pi/180
-        self.phi_limit = 5 * np.pi/180
+        self.theta_limit = 10 * np.pi/180
+        self.phi_limit = 10 * np.pi/180
         self.psi_limit = 5* np.pi/180
         
         self.use_psi_cbf = False
         
-        self.k1 = np.array([0.4, 0.4, 5, 0.3]).reshape((4,1))
-        self.k2 = np.array([0.4, 0.4, 5, 0.3]).reshape((4,1))
+        self.k1 = np.array([0.32, 0.32, 5, 0.3]).reshape((4,1))
+        self.k2 = np.array([0.32, 0.32, 5, 0.3]).reshape((4,1))
 
         self.gamma_th = 10
         self.gamma_ph = 10

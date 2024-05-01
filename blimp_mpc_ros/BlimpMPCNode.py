@@ -18,6 +18,8 @@ class BlimpMPCNode(Node):
 
     def __init__(self, controller, logfile, blimp_id=0):
         super().__init__(f'blimp_mpc_{blimp_id}')
+        
+        # time.sleep(7.5)
 
         self.logfile = logfile
 

@@ -6,15 +6,15 @@ class Trajectories:
     
     def get_helix(x0, y0, z0, psi0, dT):
         # Time
-        TRACKING_TIME = 40
-        SETTLE_TIME = 20
+        TRACKING_TIME = 30
+        SETTLE_TIME = 5
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
         settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
 
         time_vec = np.concatenate((tracking_time, settle_time))
 
-        At = 0.75
+        At = 0.5
         z_max = -0.5
 
         # Trajectory definition
@@ -42,8 +42,8 @@ class Trajectories:
         
     def get_line(x0, y0, z0, psi0, dT):
         # Trajectory definition
-        TRACKING_TIME = 40
-        SETTLE_TIME = 20
+        TRACKING_TIME = 25
+        SETTLE_TIME = 5
         
         m = 0.05
 
@@ -74,8 +74,8 @@ class Trajectories:
         # Trajectory definition
         TRACKING_TIME = 180
 
-        x_distance = 0.5
-        y_distance = 0.5
+        x_distance = 1
+        y_distance = 1
         z_distance = -0.5
 
         time_vec = np.arange(0, TRACKING_TIME, dT)
