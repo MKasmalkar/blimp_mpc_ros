@@ -2,11 +2,17 @@ clear
 close all
 clc
 
+% control_effort pos_err yaw_err roll_osc_rms pitch_osc_rms solve_time
+disp("Control effort, Pos err, Yaw err, Roll, Pitch, Solve time")
+
+
+figure
+
 %% Line follower
 
-line_cbf_1 = 'logs/cbf_line.csv';
-line_cbf_2 = 'logs/cbf_line2.csv';
-line_cbf_3 = 'logs/cbf_line3.csv';
+line_cbf_1 = 'logs/final_testing_4_25/cbf_line.csv';
+line_cbf_2 = 'logs/final_testing_4_25/cbf_line2.csv';
+line_cbf_3 = 'logs/final_testing_4_25/cbf_line3.csv';
 
 line_lqr_1 = 'logs/final_testing_4_22/lqr_line.csv';
 line_lqr_2 = 'logs/final_testing_4_22/lqr_line2.csv';
@@ -31,14 +37,14 @@ line_lqr_metrics = [line_lqr_1_metrics
 line_lqr_metrics_means = mean(line_lqr_metrics, 1)
 
 % plot_data(line_cbf_1, 60, 'Line Trajectory')
-plot_data(line_cbf_2, 60, 'Line Trajectory')
+% plot_data(line_cbf_2, 60, 'Line Trajectory', 'opengl')
 % plot_data(line_cbf_3, 60, 'Line Trajectory')
 
 %% Helix follower
 
-helix_cbf_1 = 'logs/cbf_helix.csv';
-helix_cbf_2 = 'logs/cbf_helix2.csv';
-helix_cbf_3 = 'logs/cbf_helix3.csv';
+helix_cbf_1 = 'logs/final_testing_4_25/cbf_helix.csv';
+helix_cbf_2 = 'logs/final_testing_4_25/cbf_helix2.csv';
+helix_cbf_3 = 'logs/final_testing_4_25/cbf_helix3.csv';
 
 helix_lqr_1 = 'logs/final_testing_4_22/lqr_helix.csv';
 helix_lqr_2 = 'logs/final_testing_4_22/lqr_helix2.csv';
@@ -62,15 +68,15 @@ helix_lqr_metrics = [helix_lqr_1_metrics
 
 helix_lqr_metrics_means = mean(helix_lqr_metrics, 1)
 
-plot_data(helix_cbf_1, 60, 'Helix Trajectory')
+plot_data(helix_cbf_1, 60, 'Helix Trajectory', 'opengl', 1)
 % plot_data(helix_cbf_2, 60, 'Helix Trajectory')
 % plot_data(helix_cbf_3, 60, 'Helix Trajectory')
 
 %% Triangle follower
 
-triangle_cbf_1 = 'logs/cbf_triangle.csv';
-triangle_cbf_2 = 'logs/cbf_triangle2.csv';
-triangle_cbf_3 = 'logs/cbf_triangle3.csv';
+triangle_cbf_1 = 'logs/final_testing_4_25/cbf_triangle.csv';
+triangle_cbf_2 = 'logs/final_testing_4_25/cbf_triangle2.csv';
+triangle_cbf_3 = 'logs/final_testing_4_25/cbf_triangle3.csv';
 
 triangle_lqr_1 = 'logs/final_testing_4_22/lqr_triangle.csv';
 triangle_lqr_2 = 'logs/final_testing_4_22/lqr_triangle2.csv';
@@ -94,9 +100,29 @@ triangle_lqr_metrics = [triangle_lqr_1_metrics
 
 triangle_lqr_metrics_means = mean(triangle_lqr_metrics, 1)
 
-plot_data(triangle_cbf_1, 180, 'Triangle Trajectory')
+plot_data(triangle_cbf_1, 180, 'Triangle Trajectory', 'painters', 3)
 % plot_data(triangle_cbf_2, 180, 'Triangle Trajectory')
 % plot_data(triangle_cbf_3, 180, 'Triangle Trajectory')
+
+%% CBFs vs FBL
+
+figure
+
+plot_cbf_vs_fbl("logs/cbf_vs_fbl_data_4_27/fbl_line.csv", ...
+                 ["logs/cbf_vs_fbl_data_4_27/cbf_line_75deg.csv"], ...
+                 [7.5], ...
+                 "Line", ...
+                 20, ...
+                 12, ...
+                 1)
+disp(" ")
+plot_cbf_vs_fbl("logs/cbf_vs_fbl_data_4_27/fbl_triangle.csv", ...
+                ["logs/cbf_vs_fbl_data_4_27/cbf_triangle_10deg.csv"], ...
+                 [10], ...
+                 "Triangle", ...
+                 25, ...
+                 30, ...
+                 3)
 
 function [time, ...
           state, ...
@@ -143,28 +169,15 @@ function metrics = compute_metrics(file)
     metrics = [control_effort pos_err yaw_err roll_osc_rms pitch_osc_rms solve_time];
 end
 
-function display_data(filename, name)
-    dataset = readmatrix(filename);
-    [ce, err, roll, pitch, st] = compute_metrics(dataset);
-    
-    disp("Dataset " + name + ":" + filename)
-    disp("Control effort: " + ce * 1e3 + " mN")
-    disp("Tracking error: " + err + " m")
-    disp("Roll: " + roll*180/pi + " degrees")
-    disp("Pitch: " + pitch*180/pi + " degrees")
-    disp("Solve time: " + st/1e6 + " ms")
-    disp(" ")
-end
-
-function plot_data(cbf_file, time_end, plot_title)
+function plot_data(cbf_file, time_end, plot_title, renderer, sp_start)
     [t, cbf_x, ~, ~, cbf_ref, cbf_err, ~] = load_data(cbf_file);
 
     % Trajectory tracking
-    figure
-    
-    subplot(121)
+    subplot(2, 2, sp_start)
 
-    colororder(["b", "g", "m"])
+    colororder([rgb2hex([0    0.4470    0.7410]), ...
+                rgb2hex([0.8500    0.3250    0.0980]), ...
+                rgb2hex([0.9290    0.6940    0.1250])])
     plot(t, cbf_x(:, 7:9), 'LineWidth', 2, 'LineStyle', '-')
     hold on
     plot(t, cbf_ref(:, 1:3), 'LineWidth', 2, 'LineStyle', ':')
@@ -178,42 +191,97 @@ function plot_data(cbf_file, time_end, plot_title)
     pbaspect([1 1 1])
 
     % Attitude oscillations
-    subplot(122)
-    plot(t, cbf_x(:, 10) * 180/pi, 'LineWidth', 0.75, 'LineStyle', '-', 'Color', '#D95319')
-    hold on
-    plot(t, cbf_x(:, 11) * 180/pi, 'LineWidth', 0.75, 'LineStyle', '-', 'Color', '#7E2F8E')
-    plot(t, cbf_x(:, 12) * 180/pi, 'LineWidth', 1, 'LineStyle', '-', 'Color', '#77AC30')
-    plot(t, cbf_ref(:, 4) * 180/pi, 'LineWidth', 1.25, 'LineStyle', ':', 'Color', '#77AC30')
-    
-    ylim([-10 10])
-    xlabel('Time (sec)')
-    ylabel('Angle (deg)')
-    title(plot_title + ": Roll, Pitch, and Yaw")
-    xlim([0 time_end])
-    legend('phi', 'theta', 'psi', 'psi_{ref}')
-    
-    set(gcf, 'color', 'white')
-    pbaspect([1 1 1])
-end
+    % subplot(132)
+    % plot(t, cbf_x(:, 10) * 180/pi, 'LineWidth', 0.75, 'LineStyle', '-', 'Color', '#D95319')
+    % hold on
+    % plot(t, cbf_x(:, 11) * 180/pi, 'LineWidth', 0.75, 'LineStyle', '-', 'Color', '#7E2F8E')
+    % plot(t, (cbf_x(:, 12) - cbf_ref(:, 4)) * 180/pi, 'LineWidth', 1, 'LineStyle', '-', 'Color', '#77AC30')
+    % yline(5, 'LineStyle', '--', 'LineWidth', 2)
+    % yline(-5, 'LineStyle', '--', 'LineWidth', 2)
+    % 
+    % ylim([-10 10])
+    % xlabel('Time (sec)')
+    % ylabel('Angle (deg)')
+    % title(plot_title + ": Roll, Pitch, and Yaw")
+    % xlim([0 time_end])
+    % legend('phi', 'theta', 'psi error')
+    % 
+    % set(gcf, 'color', 'white')
+    % pbaspect([1 1 1])
 
-function plot_3d(cbf_file, lqr_file, plot_title)
-    [~, cbf_x, ~, ~, ref, ~, ~] = load_data(cbf_file);
-    [~, lqr_x, ~, ~, ~, ~, ~] = load_data(lqr_file);
-
-    figure
-    plot3(cbf_x(:, 7), cbf_x(:, 8), cbf_x(:, 9), 'LineWidth', 2, 'Color', 'b');
+    % 3D trajectory plot
+    subplot(2, 2, sp_start+1)
+    plot3(cbf_x(:, 7), cbf_x(:, 8), cbf_x(:, 9), 'LineWidth', 2.5, 'Color', [0.1490    0.5490    0.8660], 'LineStyle', '-');
     hold on
-    plot3(lqr_x(:, 7), cbf_x(:, 8), cbf_x(:, 9), 'LineWidth', 1, 'Color', 'm');
-    plot3(ref(:, 1), ref(:, 2), ref(:, 3), 'LineWidth', 1, 'Color', 'g', 'LineStyle', '--');
+    plot3(cbf_ref(:, 1), cbf_ref(:, 2), cbf_ref(:, 3), 'LineWidth', 2.5, 'Color', [0.9600    0.4660    0.1600], 'LineStyle', '-');
     
     title(plot_title)
     xlabel('x')
     ylabel('y')
     zlabel('z')
     pbaspect([1 1 1])
+    margin = 0.2;
+    xlim([min(cbf_x(:,7))-margin max(cbf_x(:, 7))+margin])
+    ylim([min(cbf_x(:, 8))-margin max(cbf_x(:, 8))+margin])
+    zlim([min(cbf_x(:, 9))-margin max(cbf_x(:, 9))+margin])
     set(gca, 'ydir', 'reverse')
     set(gca, 'zdir', 'reverse')
     set(gcf, 'color', 'white')
 
-    legend('FBL+CBF', 'LQR', 'Reference')
+    legend('FBL+CBF', 'Reference')
+    set(gcf, 'Renderer', renderer)
+end
+
+function plot_cbf_vs_fbl(fbl_file, cbf_files, cbfs, name, ylims, time_end, sp_start)
+    colororder(["b", "g", "m"])
+    
+    N = 1 + length(cbf_files);
+
+    [tt, fbl_x, ~, ~, ~, ~, ~] = load_data(fbl_file);
+    
+    subplot(2, 2, sp_start)
+    plot(tt, fbl_x(:, 10) * 180/pi, 'Color', [0.1490    0.5490    0.8660], 'LineWidth', 2)
+    hold on
+    plot(tt, fbl_x(:, 11) * 180/pi, 'Color', [0.9600    0.4660    0.1600], 'LineWidth', 2)
+    xlim([0 time_end])
+    ylim([-ylims ylims])
+    xlabel('Time')
+    ylabel('Angle (deg)')
+    title(name + " Trajectory Without CBFs")
+    legend('Roll', 'Pitch')
+    pbaspect([1 1 1])
+
+    disp(name + " trajectory CBF vs FBL:")
+    disp("FBL:")
+    metrics = compute_metrics(fbl_file);
+    fbl_pos_err = metrics(2);
+    fbl_yaw_err = metrics(3);
+    disp("Pos error: " + fbl_pos_err + ", yaw error: " + fbl_yaw_err)
+    disp(" ")
+
+    for n = 1:length(cbf_files)
+        subplot(2, 2, sp_start+n)
+        [tt, cbf_x, ~, ~, ~, ~, ~] = load_data(cbf_files(n));
+        plot(tt, cbf_x(:, 10) * 180/pi, 'Color', [0.1490    0.5490    0.8660], 'LineWidth', 2)
+        hold on
+        plot(tt, cbf_x(:, 11) * 180/pi, 'Color', [0.9600    0.4660    0.1600], 'LineWidth', 2)
+        xlim([0 time_end])
+        yline(cbfs(n), 'LineWidth', 3, 'LineStyle', '--')
+        yline(-cbfs(n), 'LineWidth', 3, 'LineStyle', '--')
+        ylim([-ylims ylims])
+        xlabel('Time')
+        ylabel('Angle (deg)')
+        title(name + " Trajectory With " + cbfs(n) + "° CBF")
+        legend('Roll', 'Pitch')
+        pbaspect([1 1 1])
+
+        disp("CBF = " + cbfs(n) + "°")
+        metrics = compute_metrics(cbf_files(n));
+        cbf_pos_err = metrics(2);
+        cbf_yaw_err = metrics(3);
+        disp("Pos error: " + cbf_pos_err + ", yaw error: " + cbf_yaw_err)
+        disp(" ")
+    end
+
+    set(gcf, 'color', 'white')
 end
