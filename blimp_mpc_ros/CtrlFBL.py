@@ -3,7 +3,7 @@ from gurobipy import GRB
 import numpy as np
 import time
 from . BlimpController import BlimpController
-from . parameters import *
+from . utilities import *
 import sys
 
 class CtrlFBL(BlimpController):

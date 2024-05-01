@@ -4,7 +4,7 @@ import numpy as np
 import time
 from . CtrlCBF import CtrlCBF
 from . Trajectories import Trajectories
-from . parameters import *
+from . utilities import *
 import sys
 
 class CtrlCBFHelix(CtrlCBF):

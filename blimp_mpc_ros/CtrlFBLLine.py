@@ -5,7 +5,7 @@ import time
 from . BlimpController import BlimpController
 from . CtrlFBL import CtrlFBL
 from . Trajectories import Trajectories
-from . parameters import *
+from . utilities import *
 import sys
 
 class CtrlFBLLine(CtrlFBL):

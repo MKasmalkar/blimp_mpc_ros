@@ -4,7 +4,7 @@ import scipy.linalg
 import time
 import csv
 
-from . parameters import *
+from . utilities import *
 from . operators import *
 
 class BlimpSim():

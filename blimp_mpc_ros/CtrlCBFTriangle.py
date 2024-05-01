@@ -5,7 +5,7 @@ import time
 from . BlimpController import BlimpController
 from . CtrlCBF import CtrlCBF
 from . Trajectories import Trajectories
-from . parameters import *
+from . utilities import *
 import matplotlib.pyplot as plt
 import sys
 

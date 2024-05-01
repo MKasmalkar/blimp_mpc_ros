@@ -2,7 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import control
-from . parameters import *
+from . utilities import *
 from . CtrlLQR import CtrlLQR
 from . Trajectories import Trajectories
 import math

@@ -4,7 +4,7 @@ import numpy as np
 import time
 from . BlimpController import BlimpController
 from . Trajectories import Trajectories
-from . parameters import *
+from . utilities import *
 import control
 import sys
 
