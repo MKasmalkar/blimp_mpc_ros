@@ -15,7 +15,6 @@ class CtrlCBF(BlimpController):
         self.theta_limit = 10 * np.pi/180
         self.phi_limit = 10 * np.pi/180
         self.psi_limit = 5* np.pi/180
-        
         self.use_psi_cbf = False
         
         self.k1 = np.array([0.32, 0.32, 5, 0.3]).reshape((4,1))

@@ -46,7 +46,7 @@ def main(args=sys.argv):
         
         ctrl_ctr = 0
         
-        STOP_TIME = 60
+        STOP_TIME = 30
         PLOT_ANYTHING = False
         PLOT_WAVEFORMS = False
 

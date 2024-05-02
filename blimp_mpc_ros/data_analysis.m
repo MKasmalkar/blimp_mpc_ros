@@ -104,6 +104,11 @@ plot_data(triangle_cbf_1, 180, 'Triangle Trajectory', 'painters', 3)
 % plot_data(triangle_cbf_2, 180, 'Triangle Trajectory')
 % plot_data(triangle_cbf_3, 180, 'Triangle Trajectory')
 
+%% Raw FBL
+fbl_line = compute_metrics("logs/fbl_testing_5_2/fbl_line.csv")
+fbl_helix = compute_metrics("logs/fbl_testing_5_2/fbl_helix.csv")
+fbl_triangle = compute_metrics("logs/fbl_testing_5_2/fbl_triangle.csv")
+
 %% CBFs vs FBL
 
 figure

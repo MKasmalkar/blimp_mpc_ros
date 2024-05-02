@@ -11,8 +11,8 @@ class CtrlFBL(BlimpController):
     def __init__(self, dT):
         super().__init__(dT)
         
-        self.k1 = np.array([0.4, 0.4, 5, 0.3]).reshape((4,1))
-        self.k2 = np.array([0.4, 0.4, 5, 0.3]).reshape((4,1))
+        self.k1 = np.array([0.5, 0.5, 5, 0.3]).reshape((4,1))
+        self.k2 = np.array([0.5, 0.5, 5, 0.3]).reshape((4,1))
 
     def get_ctrl_action(self, sim):
      
