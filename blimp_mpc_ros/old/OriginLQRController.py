@@ -2,8 +2,6 @@ from . BlimpController import BlimpController
 import control
 import numpy as np
 
-from . operators import *
-
 class OriginLQRController(BlimpController):
 
     def __init__(self, dT):

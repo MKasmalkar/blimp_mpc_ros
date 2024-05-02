@@ -5,7 +5,6 @@ import time
 import csv
 
 from . utilities import *
-from . operators import *
 
 class BlimpSim():
     def __init__(self, dT):

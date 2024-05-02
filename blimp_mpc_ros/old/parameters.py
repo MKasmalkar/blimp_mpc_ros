@@ -1,4 +1,3 @@
-from . operators import *
 import numpy as np
 
 

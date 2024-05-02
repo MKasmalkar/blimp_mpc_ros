@@ -2,8 +2,6 @@ from . BlimpController import BlimpController
 import numpy as np
 import time
 
-from . operators import *
-
 class OriginPIDController(BlimpController):
 
     def __init__(self, dT):

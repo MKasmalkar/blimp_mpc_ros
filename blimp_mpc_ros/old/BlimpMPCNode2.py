@@ -10,7 +10,7 @@ import numpy as np
 import sys
 
 from . NonlinearBlimpSim import NonlinearBlimpSim
-from . operators import *
+# from . operators import *
 from . utilities import *
 
 from . BlimpLogger import BlimpLogger
