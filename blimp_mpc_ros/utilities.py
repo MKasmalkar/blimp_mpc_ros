@@ -120,7 +120,7 @@ m = rho_air * Venv
 # Center of gravity to center of buoyancy
 # r_z_g__b = 0.05 is excellent! was originally 0.09705 I think
 # = 0.02 is also good (esp. for smaller batteries)
-r_z_gb__b = 0.02
+r_z_gb__b = 0.05
 r_gb__b = np.array([0, 0, r_z_gb__b]).T
 r_z_tg__b = dvt - r_z_gb__b
 
