@@ -82,3 +82,10 @@ The parameters of the blimp (mass, inertia, damping, etc.) can be found in `util
 `BlimpLogger` is responsible for logging data to logfiles after the run is complete.
 `BlimpPlotter` is used to plot data from logfiles.
 `BlimpSim` is used to run a simulation of the blimp dynamics.
+
+## Notes
+The following folders from the `blimp_mpc_ros/logs` directory contain the relevant test data. `run_blimp_data` may be used as shown above to visualize the data from these tests.
+* `final_testing_4_25` contains the trajectory data from the feedback linearization controller with CBFs enabled
+* `final_testing_4_22` contains the trajectory data from the LQR controllers
+* `fbl_testing_5_2` contains the trajectory data from the feedback linearization controller without CBFs enabled
+* `cbf_vs_fbl_data_4_27` contains the trajectory data from the aggressive trajectories, for which the feedback linearization controller was used, both with CBFs enabled and with CBFs disabled
