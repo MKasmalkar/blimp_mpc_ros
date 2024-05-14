@@ -89,3 +89,4 @@ The following folders from the `blimp_mpc_ros/logs` directory contain the releva
 * `final_testing_4_22` contains the trajectory data from the LQR controllers
 * `fbl_testing_5_2` contains the trajectory data from the feedback linearization controller without CBFs enabled
 * `cbf_vs_fbl_data_4_27` contains the trajectory data from the aggressive trajectories, for which the feedback linearization controller was used, both with CBFs enabled and with CBFs disabled
+* `videos_5_1` contains the trajectory data from the YouTube videos
